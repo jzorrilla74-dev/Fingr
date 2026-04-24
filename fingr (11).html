@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fingr">
+<meta name="application-name" content="Fingr">
+<meta name="theme-color" content="#5BBCB8">
+<meta name="description" content="Trumpet fingering reference tool for Bb trumpet">
+<title>Fingr</title>
+
+<!-- PWA Manifest inline via data URI -->
+<link rel="manifest" href="data:application/manifest+json,{
+  %22name%22:%22Fingr%22,
+  %22short_name%22:%22Fingr%22,
+  %22description%22:%22Trumpet fingering reference%22,
+  %22start_url%22:%22.%22,
+  %22display%22:%22standalone%22,
+  %22orientation%22:%22landscape%22,
+  %22background_color%22:%22%231C1A18%22,
+  %22theme_color%22:%225BBCB8%22,
+  %22icons%22:[{
+    %22src%22:%22data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%231C1A18'/%3E%3Ccircle cx='156' cy='160' r='44' fill='%235BBCB8'/%3E%3Ccircle cx='256' cy='160' r='44' fill='%235BBCB8'/%3E%3Ccircle cx='356' cy='160' r='44' fill='%235BBCB8'/%3E%3Ccircle cx='156' cy='260' r='44' fill='%235BBCB8'/%3E%3Ccircle cx='256' cy='260' r='44' fill='%235BBCB8'/%3E%3Ccircle cx='356' cy='260' r='44' fill='none' stroke='%235BBCB8' stroke-width='8'/%3E%3Ccircle cx='156' cy='360' r='44' fill='%235BBCB8'/%3E%3Ccircle cx='256' cy='360' r='44' fill='none' stroke='%235BBCB8' stroke-width='8'/%3E%3Ccircle cx='356' cy='360' r='44' fill='none' stroke='%235BBCB8' stroke-width='8'/%3E%3C/svg%3E%22,
+    %22sizes%22:%22512x512%22,
+    %22type%22:%22image/svg+xml%22,
+    %22purpose%22:%22any maskable%22
+  }]
+}">
+
+<!-- Apple touch icon inline SVG → PNG via canvas not needed, use data URI -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='80' fill='%231C1A18'/><circle cx='156' cy='160' r='44' fill='%235BBCB8'/><circle cx='256' cy='160' r='44' fill='%235BBCB8'/><circle cx='356' cy='160' r='44' fill='%235BBCB8'/><circle cx='156' cy='260' r='44' fill='%235BBCB8'/><circle cx='256' cy='260' r='44' fill='%235BBCB8'/><circle cx='356' cy='260' r='44' fill='none' stroke='%235BBCB8' stroke-width='8'/><circle cx='156' cy='360' r='44' fill='%235BBCB8'/><circle cx='256' cy='360' r='44' fill='none' stroke='%235BBCB8' stroke-width='8'/><circle cx='356' cy='360' r='44' fill='none' stroke='%235BBCB8' stroke-width='8'/></svg>">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+@font-face {
+  font-family: 'Bravura';
+  src: url('https://cdn.jsdelivr.net/gh/steinbergmedia/bravura@master/redist/woff/Bravura.woff2') format('woff2'),
+       url('https://cdn.jsdelivr.net/gh/steinbergmedia/bravura@master/redist/woff/Bravura.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+</style>
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root {
+  --bg:          #EDEAE3;
+  --bg2:         #E2DED6;
+  --bg3:         #F2EFE8;
+  --ink:         #1C1C1A;
+  --ink2:        #6B6560;
+  --ink3:        #9A9590;
+  --teal:        #5BBCB8;
+  --teal2:       #3D9E9A;
+  --copper:      #B87333;
+  --border:      #D4CFC7;
+  --border2:     #C4BFB7;
+  --card:        #F2EFE8;
+  --topbar-h:    52px;
+  --panel-w:     300px;
+  --persist-h:   96px;
+  --radius:      6px;
+  --transition:  200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="dark"] {
+  --bg:     #1C1A18;
+  --bg2:    #242220;
+  --bg3:    #2C2A28;
+  --ink:    #E8E3D8;
+  --ink2:   #A89E90;
+  --ink3:   #6A6058;
+  --teal:   #4AADA8;
+  --teal2:  #3D9E9A;
+  --copper: #C4854A;
+  --border: #38342F;
+  --border2:#46423C;
+  --card:   #2C2A28;
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; overflow:hidden; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Jost', sans-serif;
+  font-size: 13px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background var(--transition), color var(--transition);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   TOP BAR
+   ============================================================ */
+.topbar {
+  height: var(--topbar-h);
+  flex-shrink: 0;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  transition: background var(--transition);
+}
+
+/* LOGO */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.logo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 10px);
+  grid-template-rows: repeat(3, 10px);
+  gap: 3px;
+}
+
+.logo-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1.5px solid var(--ink3);
+  transition: background var(--transition), border-color var(--transition);
+}
+.logo-dot.filled { background: var(--teal); border-color: var(--teal); }
+
+.logo-wordmark {
+  font-family: 'Jost', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 3px;
+  color: var(--ink);
+  transition: color var(--transition);
+}
+
+/* MODE TOGGLE */
+.mode-toggle {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px;
+  flex-shrink: 0;
+  transition: background var(--transition);
+}
+
+.mode-btn {
+  font-family: 'Jost', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 16px;
+  border: none;
+  background: transparent;
+  color: var(--ink3);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.mode-btn.active {
+  background: var(--teal);
+  color: white;
+}
+
+/* SELECTORS */
+.topbar-selectors {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+}
+
+select {
+  font-family: 'Jost', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition);
+}
+
+select:focus { border-color: var(--teal); }
+
+.scale-info {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--ink3);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* THEME TOGGLE */
+.theme-btn {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink2);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+  transition: all var(--transition);
+  margin-left: auto;
+}
+.theme-btn:hover { border-color: var(--teal); color: var(--teal); }
+
+/* ============================================================
+   MAIN LAYOUT
+   ============================================================ */
+.main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ============================================================
+   STAFF PANEL
+   ============================================================ */
+.staff-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+  min-width: 0;
+}
+
+.staff-scroll {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 8px 16px;
+}
+
+.staff-scroll::-webkit-scrollbar { height: 4px; }
+.staff-scroll::-webkit-scrollbar-track { background: var(--bg2); }
+.staff-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+#staff-svg { display: block; flex-shrink: 0; }
+
+/* ============================================================
+   FINGER PANEL (right)
+   ============================================================ */
+.finger-panel {
+  width: var(--panel-w);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg2);
+  overflow-y: auto;
+  padding: 16px 14px;
+  gap: 12px;
+  transition: background var(--transition);
+}
+
+.finger-panel::-webkit-scrollbar { width: 3px; }
+.finger-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.fp-empty {
+  color: var(--ink3);
+  font-style: italic;
+  font-size: 13px;
+  text-align: center;
+  padding: 24px 0;
+  line-height: 1.6;
+}
+
+/* Note header */
+.fp-note-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.fp-note-name {
+  font-family: 'EB Garamond', serif;
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink);
+  transition: color var(--transition);
+}
+.fp-note-name.is-root { color: var(--copper); }
+
+.fp-note-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 6px;
+}
+
+.fp-degree {
+  font-family: 'Jost', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--teal);
+  line-height: 1;
+}
+
+.fp-oct {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--ink3);
+  text-transform: uppercase;
+}
+
+/* Play button */
+.play-btn {
+  width: 100%;
+  padding: 10px;
+  background: var(--teal);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-family: 'Jost', sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+.play-btn:active { background: var(--teal2); transform: scale(0.98); }
+
+/* Section label */
+.fp-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+
+/* Fingering cards */
+.fing-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  transition: background var(--transition), border-color var(--transition);
+}
+.fing-card.primary { border-color: var(--border2); }
+
+.valve-label-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+.vlbl {
+  width: 38px;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink3);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.valve-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+
+.valve {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  border: 2px solid var(--ink3);
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Jost', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink3);
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+.valve.pressed {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+[data-theme="dark"] .valve.pressed {
+  background: var(--ink);
+  border-color: var(--teal);
+  color: var(--bg);
+}
+
+.fing-desc {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--ink3);
+  letter-spacing: 0.5px;
+  line-height: 1.5;
+}
+.fing-desc strong { color: var(--ink2); font-weight: 600; }
+
+/* Alternates toggle */
+.alts-toggle {
+  background: none;
+  border: none;
+  font-family: 'Jost', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--teal);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.alts-container { display: flex; flex-direction: column; gap: 8px; }
+
+/* Legend */
+.fp-legend {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.leg-item {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 9px; font-weight: 500; color: var(--ink3);
+  letter-spacing: 0.5px;
+}
+.leg-dot {
+  width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+}
+
+/* ============================================================
+   PERSISTENT PANEL (bottom)
+   ============================================================ */
+.persist-panel {
+  flex-shrink: 0;
+  height: 0;
+  overflow: hidden;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  transition: height var(--transition), background var(--transition);
+  display: flex;
+  align-items: center;
+}
+
+.persist-panel.has-notes {
+  height: var(--persist-h);
+}
+
+.persist-scroll {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  height: 100%;
+}
+
+.persist-scroll::-webkit-scrollbar { height: 3px; }
+.persist-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.persist-card {
+  flex-shrink: 0;
+  width: 62px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 7px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.persist-card:active { transform: scale(0.95); }
+.persist-card.is-root { border-color: var(--copper); }
+
+.pc-name {
+  font-family: 'Jost', sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.pc-valves {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.pc-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink3);
+  background: transparent;
+  transition: all var(--transition);
+}
+.pc-dot.pressed { background: var(--teal); border-color: var(--teal); }
+
+.pc-degree {
+  font-family: 'Jost', sans-serif;
+  font-weight: 700;
+  font-size: 10px;
+  color: var(--teal);
+  line-height: 1;
+}
+
+/* Clear all button */
+.persist-clear {
+  flex-shrink: 0;
+  margin-right: 16px;
+  background: none;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font-family: 'Jost', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink3);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition);
+}
+.persist-clear:hover { border-color: var(--copper); color: var(--copper); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 767px) {
+  :root { --panel-w: 100%; --topbar-h: 44px; }
+  .main { flex-direction: column; }
+  .staff-panel { border-right: none; border-bottom: 1px solid var(--border); flex: none; height: 200px; }
+  .finger-panel { width: 100%; flex: 1; flex-direction: row; flex-wrap: wrap; padding: 10px 12px; gap: 8px; overflow-y: auto; }
+  .fp-legend { display: none; }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root { --panel-w: 260px; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <!-- Logo -->
+  <div class="logo">
+    <div class="logo-grid" id="logo-grid">
+      <!-- Row 1: ●●● -->
+      <div class="logo-dot filled"></div>
+      <div class="logo-dot filled"></div>
+      <div class="logo-dot filled"></div>
+      <!-- Row 2: ●●○ -->
+      <div class="logo-dot filled"></div>
+      <div class="logo-dot filled"></div>
+      <div class="logo-dot"></div>
+      <!-- Row 3: ●○○ -->
+      <div class="logo-dot filled"></div>
+      <div class="logo-dot"></div>
+      <div class="logo-dot"></div>
+    </div>
+    <span class="logo-wordmark">FINGR</span>
+  </div>
+
+  <!-- Mode toggle -->
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="btn-transient" onclick="setMode('transient')">Transient</button>
+    <button class="mode-btn" id="btn-persistent" onclick="setMode('persistent')">Persistent</button>
+  </div>
+
+  <!-- Scale selectors -->
+  <div class="topbar-selectors">
+    <select id="type-select" onchange="onTypeChange()">
+      <option value="chromatic">Chromatic</option>
+      <optgroup label="Major"><option value="major">Major</option></optgroup>
+      <optgroup label="Minor">
+        <option value="natural_minor">Natural Minor</option>
+        <option value="harmonic_minor">Harmonic Minor</option>
+        <option value="melodic_minor">Melodic Minor</option>
+      </optgroup>
+      <optgroup label="Jazz Modes">
+        <option value="dorian">Dorian</option>
+        <option value="mixolydian">Mixolydian</option>
+        <option value="lydian">Lydian</option>
+        <option value="phrygian">Phrygian</option>
+        <option value="locrian">Locrian</option>
+        <option value="lydian_dominant">Lydian Dominant</option>
+        <option value="altered">Altered</option>
+      </optgroup>
+      <optgroup label="Pentatonic / Blues">
+        <option value="major_pent">Major Pentatonic</option>
+        <option value="minor_pent">Minor Pentatonic</option>
+        <option value="blues">Blues</option>
+      </optgroup>
+    </select>
+
+    <select id="root-select" onchange="onRootChange()" style="display:none;">
+      <option value="C">C</option><option value="Cs">C♯</option>
+      <option value="D">D</option><option value="Ds">D♯</option>
+      <option value="E">E</option><option value="F">F</option>
+      <option value="Fs">F♯</option><option value="G">G</option>
+      <option value="Gs">G♯</option><option value="A">A</option>
+      <option value="As">A♯</option><option value="B">B</option>
+    </select>
+
+    <span class="scale-info" id="scale-info">F♯3 — C6</span>
+  </div>
+
+  <!-- Theme toggle -->
+  <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme" id="theme-btn">☀</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- STAFF -->
+  <div class="staff-panel">
+    <div class="staff-scroll">
+      <svg id="staff-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+  </div>
+
+  <!-- FINGER PANEL -->
+  <div class="finger-panel" id="finger-panel">
+    <div class="fp-empty">Tap any note<br>on the staff</div>
+  </div>
+
+</div>
+
+<!-- PERSISTENT PANEL -->
+<div class="persist-panel" id="persist-panel">
+  <div class="persist-scroll" id="persist-scroll"></div>
+  <button class="persist-clear" id="persist-clear" onclick="clearAllPersist()">Clear all</button>
+</div>
+
+<script>
+// ============================================================
+// NOTE DATA
+// pos: staff position (0=E4 bottom line, +1=up half step)
+// ============================================================
+const NOTES = [
+  {id:'Fs3',disp:'F♯',name:'Fs',oct:3,pos:-6,acc:true, fingerings:[{v:[1,2,3],desc:'standard'}]},
+  {id:'G3', disp:'G', name:'G', oct:3,pos:-5,acc:false,fingerings:[{v:[1,3],desc:'standard'}]},
+  {id:'Gs3',disp:'G♯',name:'Gs',oct:3,pos:-5,acc:true, fingerings:[{v:[2,3],desc:'standard'}]},
+  {id:'A3', disp:'A', name:'A', oct:3,pos:-4,acc:false,fingerings:[{v:[1,2],desc:'standard'},{v:[3],desc:'alternate'}]},
+  {id:'As3',disp:'A♯',name:'As',oct:3,pos:-4,acc:true, fingerings:[{v:[1],desc:'standard'}]},
+  {id:'B3', disp:'B', name:'B', oct:3,pos:-3,acc:false,fingerings:[{v:[2],desc:'standard'}]},
+  {id:'C4', disp:'C', name:'C', oct:4,pos:-2,acc:false,fingerings:[{v:[],desc:'open'}]},
+  {id:'Cs4',disp:'C♯',name:'Cs',oct:4,pos:-2,acc:true, fingerings:[{v:[1,2,3],desc:'standard'}]},
+  {id:'D4', disp:'D', name:'D', oct:4,pos:-1,acc:false,fingerings:[{v:[1,3],desc:'standard'}]},
+  {id:'Ds4',disp:'D♯',name:'Ds',oct:4,pos:-1,acc:true, fingerings:[{v:[2,3],desc:'standard'}]},
+  {id:'E4', disp:'E', name:'E', oct:4,pos:0, acc:false,fingerings:[{v:[1,2],desc:'standard'},{v:[3],desc:'alternate'}]},
+  {id:'F4', disp:'F', name:'F', oct:4,pos:1, acc:false,fingerings:[{v:[1],desc:'standard'}]},
+  {id:'Fs4',disp:'F♯',name:'Fs',oct:4,pos:1, acc:true, fingerings:[{v:[2],desc:'standard'}]},
+  {id:'G4', disp:'G', name:'G', oct:4,pos:2, acc:false,fingerings:[{v:[],desc:'open'},{v:[1,3],desc:'alternate'}]},
+  {id:'Gs4',disp:'G♯',name:'Gs',oct:4,pos:2, acc:true, fingerings:[{v:[2,3],desc:'standard'}]},
+  {id:'A4', disp:'A', name:'A', oct:4,pos:3, acc:false,fingerings:[{v:[1,2],desc:'standard'},{v:[3],desc:'alternate'}]},
+  {id:'As4',disp:'A♯',name:'As',oct:4,pos:3, acc:true, fingerings:[{v:[1],desc:'standard'}]},
+  {id:'B4', disp:'B', name:'B', oct:4,pos:4, acc:false,fingerings:[{v:[2],desc:'standard'}]},
+  {id:'C5', disp:'C', name:'C', oct:5,pos:5, acc:false,fingerings:[{v:[],desc:'open'},{v:[2,3],desc:'alternate'}]},
+  {id:'Cs5',disp:'C♯',name:'Cs',oct:5,pos:5, acc:true, fingerings:[{v:[1,2],desc:'standard'}]},
+  {id:'D5', disp:'D', name:'D', oct:5,pos:6, acc:false,fingerings:[{v:[1],desc:'standard'},{v:[1,3],desc:'alternate'}]},
+  {id:'Ds5',disp:'D♯',name:'Ds',oct:5,pos:6, acc:true, fingerings:[{v:[2],desc:'standard'},{v:[2,3],desc:'alternate'}]},
+  {id:'E5', disp:'E', name:'E', oct:5,pos:7, acc:false,fingerings:[{v:[],desc:'open'},{v:[1,2],desc:'alternate'},{v:[3],desc:'alternate'}]},
+  {id:'F5', disp:'F', name:'F', oct:5,pos:8, acc:false,fingerings:[{v:[1],desc:'standard'}]},
+  {id:'Fs5',disp:'F♯',name:'Fs',oct:5,pos:8, acc:true, fingerings:[{v:[2],desc:'standard'}]},
+  {id:'G5', disp:'G', name:'G', oct:5,pos:9, acc:false,fingerings:[{v:[],desc:'open'},{v:[1,3],desc:'alternate'}]},
+  {id:'Gs5',disp:'G♯',name:'Gs',oct:5,pos:9, acc:true, fingerings:[{v:[2,3],desc:'standard'}]},
+  {id:'A5', disp:'A', name:'A', oct:5,pos:10,acc:false,fingerings:[{v:[1,2],desc:'standard'},{v:[3],desc:'alternate'}]},
+  {id:'As5',disp:'A♯',name:'As',oct:5,pos:10,acc:true, fingerings:[{v:[1],desc:'standard'}]},
+  {id:'B5', disp:'B', name:'B', oct:5,pos:11,acc:false,fingerings:[{v:[2],desc:'standard'}]},
+  {id:'C6', disp:'C', name:'C', oct:6,pos:12,acc:false,fingerings:[{v:[],desc:'open'}]},
+];
+
+// ============================================================
+// SCALES
+// ============================================================
+const SCALES = {
+  chromatic:[0,1,2,3,4,5,6,7,8,9,10,11],
+  major:[0,2,4,5,7,9,11],
+  natural_minor:[0,2,3,5,7,8,10],
+  harmonic_minor:[0,2,3,5,7,8,11],
+  melodic_minor:[0,2,3,5,7,9,11],
+  dorian:[0,2,3,5,7,9,10],
+  mixolydian:[0,2,4,5,7,9,10],
+  lydian:[0,2,4,6,7,9,11],
+  phrygian:[0,1,3,5,7,8,10],
+  locrian:[0,1,3,5,6,8,10],
+  lydian_dominant:[0,2,4,6,7,9,10],
+  altered:[0,1,3,4,6,8,10],
+  major_pent:[0,2,4,7,9],
+  minor_pent:[0,3,5,7,10],
+  blues:[0,3,5,6,7,10],
+};
+
+const SCALE_NAMES={
+  chromatic:'Chromatic',major:'Major',natural_minor:'Natural Minor',
+  harmonic_minor:'Harmonic Minor',melodic_minor:'Melodic Minor',
+  dorian:'Dorian',mixolydian:'Mixolydian',lydian:'Lydian',
+  phrygian:'Phrygian',locrian:'Locrian',lydian_dominant:'Lydian Dominant',
+  altered:'Altered',major_pent:'Major Pentatonic',minor_pent:'Minor Pentatonic',
+  blues:'Blues'
+};
+
+const NOTE_SEMI={C:0,Cs:1,D:2,Ds:3,E:4,F:5,Fs:6,G:7,Gs:8,A:9,As:10,B:11};
+const ROMANS=['I','II','III','IV','V','VI','VII'];
+
+const ID_SEMI={
+  'Fs3':6,'G3':7,'Gs3':8,'A3':9,'As3':10,'B3':11,
+  'C4':12,'Cs4':13,'D4':14,'Ds4':15,'E4':16,
+  'F4':17,'Fs4':18,'G4':19,'Gs4':20,'A4':21,'As4':22,'B4':23,
+  'C5':24,'Cs5':25,'D5':26,'Ds5':27,'E5':28,'F5':29,
+  'Fs5':30,'G5':31,'Gs5':32,'A5':33,'As5':34,'B5':35,'C6':36
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let mode = 'transient';        // 'transient' | 'persistent'
+let selectedId = null;         // transient selected note
+let persistSet = new Set();    // persistent toggled notes (ordered by pos)
+let activeSet = null;          // notes in current scale (null = all)
+let degreeMap = {};
+let currentType = 'chromatic';
+let currentRoot = 'C';
+let showAlts = false;
+let isDark = false;
+
+// Sequence playback state
+let isPlaying = false;
+let seqTimeouts = [];
+let playingId = null;          // note id currently highlighted during sequence
+
+// ============================================================
+// THEME
+// ============================================================
+function toggleTheme(){
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : '');
+  document.getElementById('theme-btn').textContent = isDark ? '☾' : '☀';
+  // Re-render panel so CSS variables are applied to new innerHTML
+  const currentNote = selectedId ? NOTES.find(n => n.id === selectedId) : null;
+  renderFingerPanel(currentNote);
+  drawStaff();
+}
+
+// ============================================================
+// MODE
+// ============================================================
+function setMode(m){
+  mode = m;
+  stopSequence();
+  document.getElementById('btn-transient').classList.toggle('active', m === 'transient');
+  document.getElementById('btn-persistent').classList.toggle('active', m === 'persistent');
+  if(m === 'transient'){
+    persistSet.clear();
+    updatePersistPanel();
+  }
+  selectedId = null;
+  renderFingerPanel(null);
+  drawStaff();
+}
+
+// ============================================================
+// SCALE
+// ============================================================
+function onTypeChange(){
+  currentType = document.getElementById('type-select').value;
+  document.getElementById('root-select').style.display = currentType === 'chromatic' ? 'none' : 'inline-block';
+  updateScale();
+}
+
+function onRootChange(){
+  currentRoot = document.getElementById('root-select').value;
+  updateScale();
+}
+
+function updateScale(){
+  degreeMap = {};
+  persistSet.clear();
+  stopSequence();
+  updatePersistPanel();
+  selectedId = null;
+
+  if(currentType === 'chromatic'){
+    activeSet = null;
+    document.getElementById('scale-info').textContent = 'F♯3 — C6';
+  } else {
+    const rootSemi = NOTE_SEMI[currentRoot];
+    const intervals = SCALES[currentType];
+    const semiSet = new Set(intervals.map(i => (rootSemi + i) % 12));
+    activeSet = new Set();
+    NOTES.forEach(n => {
+      if(semiSet.has(NOTE_SEMI[n.name])){
+        activeSet.add(n.id);
+        const rel = ((NOTE_SEMI[n.name] - rootSemi) + 12) % 12;
+        const idx = intervals.indexOf(rel);
+        if(idx >= 0) degreeMap[n.id] = idx;
+      }
+    });
+    const rd = currentRoot.replace('s','♯');
+    document.getElementById('scale-info').textContent = `${rd} ${SCALE_NAMES[currentType]}`;
+  }
+
+  renderFingerPanel(null);
+  drawStaff();
+}
+
+// ============================================================
+// AUDIO
+// ============================================================
+let audioCtx = null;
+function getAudio(){ if(!audioCtx) audioCtx = new(window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+
+function playNote(note){
+  const ctx = getAudio();
+  const concertSemi = ID_SEMI[note.id] - 2;
+  const freq = 440 * Math.pow(2, (concertSemi - 21) / 12);
+  const now = ctx.currentTime;
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0, now);
+  master.gain.linearRampToValueAtTime(0.22, now + 0.04);
+  master.gain.linearRampToValueAtTime(0.18, now + 0.5);
+  master.gain.linearRampToValueAtTime(0, now + 0.85);
+  master.connect(ctx.destination);
+  [[1,0.5],[2,0.3],[3,0.15],[4,0.05]].forEach(([m,g]) => {
+    const o = ctx.createOscillator();
+    const gn = ctx.createGain();
+    o.type = 'sawtooth'; o.frequency.value = freq * m;
+    gn.gain.value = g;
+    o.connect(gn); gn.connect(master);
+    o.start(now); o.stop(now + 0.9);
+  });
+}
+
+// ============================================================
+// SEQUENCE PLAYBACK (persistent mode)
+// ============================================================
+const SEQ_NOTE_DUR = 0.65;  // seconds per note
+const SEQ_GAP = 0.1;        // gap between notes
+
+function playSequence(){
+  if(persistSet.size === 0) return;
+  stopSequence();
+  isPlaying = true;
+  updatePlayBtn();
+
+  const sorted = NOTES.filter(n => persistSet.has(n.id));
+  const total = sorted.length;
+
+  sorted.forEach((note, idx) => {
+    const delay = idx * (SEQ_NOTE_DUR + SEQ_GAP) * 1000;
+
+    // Schedule audio
+    const audioTimeout = setTimeout(() => {
+      playNote(note);
+    }, delay);
+
+    // Schedule highlight
+    const highlightTimeout = setTimeout(() => {
+      playingId = note.id;
+      drawStaff();
+      highlightPersistCard(note.id);
+    }, delay);
+
+    seqTimeouts.push(audioTimeout, highlightTimeout);
+
+    // Schedule end of last note
+    if(idx === total - 1){
+      const endTimeout = setTimeout(() => {
+        stopSequence();
+      }, delay + SEQ_NOTE_DUR * 1000);
+      seqTimeouts.push(endTimeout);
+    }
+  });
+}
+
+function stopSequence(){
+  seqTimeouts.forEach(t => clearTimeout(t));
+  seqTimeouts = [];
+  isPlaying = false;
+  playingId = null;
+  updatePlayBtn();
+  drawStaff();
+  updatePersistPanel();
+}
+
+function updatePlayBtn(){
+  const btn = document.getElementById('seq-play-btn');
+  if(!btn) return;
+  btn.innerHTML = isPlaying
+    ? '<span>■</span> <span>Stop</span>'
+    : '<span>▶</span> <span>Play Sequence</span>';
+  btn.style.background = isPlaying ? 'var(--copper)' : 'var(--teal)';
+}
+
+function highlightPersistCard(id){
+  document.querySelectorAll('.persist-card').forEach(c => {
+    c.style.borderColor = c.getAttribute('data-id') === id
+      ? 'var(--teal)'
+      : '';
+  });
+}
+// ============================================================
+// STAFF DRAWING
+// Fixed viewBox (316 high), scaled to container via explicit px height
+// pos 0=E4 bottom line, staff lines at pos 0,2,4,6,8
+// ============================================================
+
+const LG=22, SB=212, NRX=11, NRY=7.5;
+function pY(pos){ return SB - pos*(LG/2); }
+
+function se(tag,attrs,txt){
+  const el=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,String(v)));
+  if(txt!==undefined) el.textContent=txt;
+  return el;
+}
+
+function getCSSVar(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function drawStaff(){
+  const svg=document.getElementById('staff-svg');
+  svg.innerHTML='';
+
+  const N=NOTES.length;
+  const CLEF_W=100, PER=29;
+  const W=CLEF_W+N*PER+30;
+  const H=325;
+
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('width', W);
+  svg.setAttribute('height', H);
+  svg.removeAttribute('preserveAspectRatio');
+
+  const ink = getCSSVar('--ink');
+  const ink3 = getCSSVar('--ink3');
+  const teal = getCSSVar('--teal');
+  const copper = getCSSVar('--copper');
+
+  // Staff lines
+  for(let i=0;i<=4;i++){
+    const y=pY(i*2);
+    svg.appendChild(se('line',{x1:28,x2:W-8,y1:y,y2:y,stroke:ink,'stroke-width':1.4}));
+  }
+
+  // Treble clef — Bravura SMuFL U+E050
+  // SMuFL spec: glyph origin sits ON the G line (2nd line from bottom = pos 2)
+  // font-size: in Bravura, 1 staff space = 0.25em, so 1em = 4 staff spaces = 4*LG px
+  // The glyph extends: ~6 spaces above origin, ~3.5 spaces below
+  const clefEM = LG * 4;  // 80px in fixed coord space
+  svg.appendChild(se('text',{
+    x: 16,
+    y: pY(3),
+    'font-family': 'Bravura, serif',
+    'font-size': clefEM,
+    fill: ink,
+    'dominant-baseline': 'auto',
+    'text-anchor': 'start'
+  }, '\uE050'));
+
+  let x0 = CLEF_W + 6;
+
+  // Notes
+  NOTES.forEach((note, idx) => {
+    const isActive = !activeSet || activeSet.has(note.id);
+    const isSel = mode === 'transient' ? note.id === selectedId : persistSet.has(note.id);
+    const isRoot = activeSet && NOTE_SEMI[note.name] === NOTE_SEMI[currentRoot];
+    const x = x0 + idx * PER + PER/2;
+    const y = pY(note.pos);
+
+    // Colour — playingId overrides during sequence
+    const isSeqPlaying = playingId === note.id;
+    const col = isSeqPlaying ? teal
+      : isSel ? teal
+      : isRoot && activeSet ? copper
+      : isActive ? ink
+      : ink3;
+    const op = isActive ? 1 : 0.2;
+
+    // Ledger lines below (at pos -2, -4, -6)
+    if(note.pos < 0){
+      for(let lp = -2; lp >= note.pos; lp -= 2){
+        svg.appendChild(se('line',{x1:x-14,x2:x+14,y1:pY(lp),y2:pY(lp),stroke:ink,'stroke-width':1.2,opacity:op}));
+      }
+    }
+    // Ledger lines above (at pos 10, 12)
+    if(note.pos > 8){
+      for(let lp = 10; lp <= note.pos; lp += 2){
+        svg.appendChild(se('line',{x1:x-14,x2:x+14,y1:pY(lp),y2:pY(lp),stroke:ink,'stroke-width':1.2,opacity:op}));
+      }
+    }
+
+    // Glow ring — persistent selected or currently playing in sequence
+    if((isSel && mode === 'persistent') || isSeqPlaying){
+      svg.appendChild(se('ellipse',{
+        cx:x, cy:y, rx:NRX+5, ry:NRY+5,
+        fill: isSeqPlaying ? teal : 'none',
+        stroke: teal, 'stroke-width': 1.5,
+        opacity: isSeqPlaying ? 0.25 : 0.4
+      }));
+    }
+
+    // Accidental
+    if(note.acc){
+      const accSize = 15;
+      svg.appendChild(se('text',{
+        x: x - NRX - 3, y: y + accSize * 0.35,
+        'font-size': accSize, 'font-family':'serif',
+        fill:col, 'text-anchor':'middle', opacity:op
+      },'♯'));
+    }
+
+    // Note head
+    svg.appendChild(se('ellipse',{
+      cx:x, cy:y, rx:NRX, ry:NRY,
+      fill:col, opacity:op,
+      cursor:isActive?'pointer':'default',
+      'data-id':note.id
+    }));
+
+    // Hit area (generous for touch)
+    if(isActive){
+      svg.appendChild(se('rect',{
+        x:x-NRX-6, y:y-NRY-8, width:(NRX+6)*2, height:(NRY+8)*2,
+        fill:'transparent', cursor:'pointer', 'data-id':note.id
+      }));
+    }
+
+    // Scale degree (above staff)
+    if(activeSet && activeSet.has(note.id) && degreeMap[note.id] !== undefined){
+      svg.appendChild(se('text',{
+        x, y: pY(14),
+        'font-size': 11,
+        'font-family':'Jost, sans-serif',
+        fill: isRoot ? copper : teal,
+        'text-anchor':'middle', 'font-weight':'700'
+      }, ROMANS[degreeMap[note.id]]));
+    }
+
+    // Note label (below)
+    svg.appendChild(se('text',{
+      x, y: pY(-8),
+      'font-size': 9,
+      'font-family':'Jost, sans-serif',
+      fill: isActive ? (isRoot && activeSet ? copper : ink3) : ink3,
+      'text-anchor':'middle', opacity: isActive ? 1 : 0.3
+    }, note.disp + note.oct));
+  });
+
+  // Events
+  svg.onclick = e => {
+    const id = e.target.getAttribute('data-id');
+    if(!id) return;
+    if(!activeSet || activeSet.has(id)) onNoteClick(id);
+  };
+  svg.ontouchend = e => {
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    const el = document.elementFromPoint(t.clientX, t.clientY);
+    const id = el && el.getAttribute('data-id');
+    if(id && (!activeSet || activeSet.has(id))) onNoteClick(id);
+  };
+}
+
+function onNoteClick(id){
+  const note = NOTES.find(n => n.id === id);
+  if(!note) return;
+
+  if(mode === 'transient'){
+    selectedId = id;
+    playNote(note);
+    renderFingerPanel(note);
+  } else {
+    // Persistent: toggle
+    if(persistSet.has(id)){
+      persistSet.delete(id);
+      // If this was the displayed note, clear panel
+      if(selectedId === id){ selectedId = null; renderFingerPanel(null); }
+    } else {
+      persistSet.add(id);
+      selectedId = id;
+      playNote(note);
+      renderFingerPanel(note);
+    }
+    updatePersistPanel();
+  }
+  drawStaff();
+}
+
+// ============================================================
+// PERSISTENT PANEL
+// ============================================================
+function updatePersistPanel(){
+  const panel = document.getElementById('persist-panel');
+  const scroll = document.getElementById('persist-scroll');
+
+  if(persistSet.size === 0){
+    panel.classList.remove('has-notes');
+    scroll.innerHTML = '';
+    return;
+  }
+
+  panel.classList.add('has-notes');
+
+  // Sort by staff position (left to right)
+  const sorted = NOTES.filter(n => persistSet.has(n.id));
+
+  scroll.innerHTML = '';
+  sorted.forEach(note => {
+    const isRoot = activeSet && NOTE_SEMI[note.name] === NOTE_SEMI[currentRoot];
+    const deg = degreeMap[note.id];
+    const fng = note.fingerings[0];
+
+    const card = document.createElement('div');
+    card.className = 'persist-card' + (isRoot ? ' is-root' : '');
+    card.setAttribute('data-id', note.id);
+
+    const dotsHTML = [1,2,3].map(v =>
+      `<div class="pc-dot${fng.v.includes(v)?' pressed':''}"></div>`
+    ).join('');
+
+    card.innerHTML = `
+      <div class="pc-name">${note.disp}${note.oct}</div>
+      <div class="pc-valves">${dotsHTML}</div>
+      ${activeSet && deg !== undefined ? `<div class="pc-degree">${ROMANS[deg]}</div>` : ''}
+    `;
+
+    card.onclick = () => {
+      persistSet.delete(note.id);
+      if(selectedId === note.id){ selectedId = null; renderFingerPanel(null); }
+      updatePersistPanel();
+      drawStaff();
+    };
+
+    scroll.appendChild(card);
+  });
+}
+
+function clearAllPersist(){
+  stopSequence();
+  persistSet.clear();
+  selectedId = null;
+  updatePersistPanel();
+  renderFingerPanel(null);
+  drawStaff();
+}
+
+// ============================================================
+// FINGER PANEL
+// ============================================================
+function renderFingerPanel(note){
+  const panel = document.getElementById('finger-panel');
+  if(!note){
+    if(mode === 'persistent' && persistSet.size > 0){
+      // Show play sequence button even with no note focused
+      panel.innerHTML = `<div class="fp-empty" style="margin-bottom:8px;">Tap a note to see fingering</div>
+        <button class="play-btn" id="seq-play-btn"
+          onclick="isPlaying ? stopSequence() : playSequence()"
+          style="background:${isPlaying?'var(--copper)':'var(--teal)'}">
+          <span>${isPlaying?'■':'▶'}</span>
+          <span>${isPlaying?'Stop':'Play Sequence'}</span>
+        </button>
+        <div class="fp-legend">
+          <div class="leg-item"><div class="leg-dot" style="background:var(--ink)"></div>Scale note</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--copper)"></div>Root</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--teal)"></div>Selected / playing</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--ink3);opacity:0.3"></div>Outside scale</div>
+        </div>`;
+    } else {
+      panel.innerHTML = '<div class="fp-empty">Tap any note<br>on the staff</div>';
+    }
+    return;
+  }
+
+  const isRoot = activeSet && NOTE_SEMI[note.name] === NOTE_SEMI[currentRoot];
+  const deg = degreeMap[note.id];
+  const fm = {1:'index',2:'middle',3:'ring'};
+
+  const primary = note.fingerings[0];
+  const alts = note.fingerings.slice(1);
+
+  let html = '';
+
+  // Note header
+  html += `<div class="fp-note-header">
+    <div class="fp-note-name${isRoot?' is-root':''}">${note.disp}<span style="font-size:20px;color:var(--ink3);vertical-align:sub;">${note.oct}</span></div>
+    <div class="fp-note-meta">
+      ${activeSet && deg !== undefined ? `<div class="fp-degree">${ROMANS[deg]}</div>` : ''}
+      <div class="fp-oct">${isRoot?'root · ':''}oct ${note.oct}</div>
+    </div>
+  </div>`;
+
+  // Play button — transient: play single note / persistent: play/stop sequence
+  if(mode === 'transient'){
+    html += `<button class="play-btn" onclick="(function(){const n=NOTES.find(x=>x.id==='${note.id}');if(n)playNote(n);})()">
+      <span>▶</span> <span>Play</span>
+    </button>`;
+  } else {
+    html += `<button class="play-btn" id="seq-play-btn"
+      onclick="isPlaying ? stopSequence() : playSequence()"
+      style="background:${isPlaying?'var(--copper)':'var(--teal)'}">
+      <span>${isPlaying?'■':'▶'}</span>
+      <span>${isPlaying?'Stop':'Play Sequence'}</span>
+    </button>`;
+  }
+
+  // Primary fingering
+  html += `<div class="fp-label">Primary fingering</div>`;
+  html += fingerCard(primary, true, fm);
+
+  // Alternates
+  if(alts.length > 0){
+    html += `<div class="alts-container" id="alts-container" style="display:none;">`;
+    alts.forEach(a => { html += fingerCard(a, false, fm); });
+    html += `</div>`;
+    html += `<button class="alts-toggle" onclick="toggleAlts()">
+      <span id="alts-arrow">▸</span>
+      <span id="alts-label">Show alternates (${alts.length})</span>
+    </button>`;
+  }
+
+  // Legend
+  html += `<div class="fp-legend">
+    <div class="leg-item"><div class="leg-dot" style="background:var(--ink)"></div>Scale note</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--copper)"></div>Root</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--teal)"></div>Selected</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--ink3);opacity:0.3"></div>Outside scale</div>
+  </div>`;
+
+  panel.innerHTML = html;
+}
+
+function fingerCard(fng, isPrimary, fm){
+  const vLabel = fng.v.length === 0 ? 'Open horn' : 'Valve ' + fng.v.join('+');
+  const fText = fng.v.length === 0 ? 'No valves pressed' : fng.v.map(v=>fm[v]).join(' + ');
+  return `<div class="fing-card${isPrimary?' primary':''}">
+    <div class="valve-label-row">
+      <div class="vlbl">1st</div><div class="vlbl">2nd</div><div class="vlbl">3rd</div>
+    </div>
+    <div class="valve-row">
+      <div class="valve${fng.v.includes(1)?' pressed':''}">1</div>
+      <div class="valve${fng.v.includes(2)?' pressed':''}">2</div>
+      <div class="valve${fng.v.includes(3)?' pressed':''}">3</div>
+    </div>
+    <div class="fing-desc"><strong>${vLabel}</strong> · ${fng.desc}<br>${fText}</div>
+  </div>`;
+}
+
+function toggleAlts(){
+  const c = document.getElementById('alts-container');
+  const a = document.getElementById('alts-arrow');
+  const l = document.getElementById('alts-label');
+  if(!c) return;
+  const showing = c.style.display !== 'none';
+  c.style.display = showing ? 'none' : 'flex';
+  a.textContent = showing ? '▸' : '▾';
+  const count = c.querySelectorAll('.fing-card').length;
+  l.textContent = showing ? `Show alternates (${count})` : `Hide alternates`;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+drawStaff();
+
+// ============================================================
+// SERVICE WORKER — offline caching
+// ============================================================
+if('serviceWorker' in navigator){
+  const swCode = `
+    const CACHE = 'fingr-v1';
+    const ASSETS = [self.location.pathname];
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+      self.skipWaiting();
+    });
+    self.addEventListener('activate', e => {
+      e.waitUntil(caches.keys().then(keys =>
+        Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      ));
+      self.clients.claim();
+    });
+    self.addEventListener('fetch', e => {
+      e.respondWith(
+        caches.match(e.request).then(cached => cached || fetch(e.request))
+      );
+    });
+  `;
+  const blob = new Blob([swCode], {type:'application/javascript'});
+  const swURL = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swURL).catch(()=>{});
+}
+</script>
+</body>
+</html>
