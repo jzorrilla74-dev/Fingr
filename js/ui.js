@@ -1,11 +1,8 @@
-import { NOTES } from './notes.js';
-import { NOTE_SEMI, ROMANS } from './scales.js';
-
 // ============================================================
 // PERSISTENT PANEL
 // ============================================================
 
-export function updatePersistPanel(appState, callbacks) {
+function updatePersistPanel(appState, callbacks) {
   const panel  = document.getElementById('persist-panel');
   const scroll = document.getElementById('persist-scroll');
   const { persistSet, activeSet, degreeMap, currentRoot, playingId } = appState;
@@ -26,7 +23,9 @@ export function updatePersistPanel(appState, callbacks) {
     const fng    = note.fingerings[0];
 
     const card = document.createElement('div');
-    card.className = 'persist-card' + (isRoot ? ' is-root' : '') + (playingId === note.id ? ' playing' : '');
+    card.className = 'persist-card'
+      + (isRoot ? ' is-root' : '')
+      + (playingId === note.id ? ' playing' : '');
     card.setAttribute('data-id', note.id);
 
     const dotsHTML = [1, 2, 3].map(v =>
@@ -44,10 +43,9 @@ export function updatePersistPanel(appState, callbacks) {
   });
 }
 
-export function highlightPersistCard(id) {
+function highlightPersistCard(id) {
   document.querySelectorAll('.persist-card').forEach(c => {
-    const isPlaying = c.getAttribute('data-id') === id;
-    c.style.borderColor = isPlaying ? 'var(--teal)' : '';
+    c.style.borderColor = c.getAttribute('data-id') === id ? 'var(--teal)' : '';
   });
 }
 
@@ -55,7 +53,7 @@ export function highlightPersistCard(id) {
 // FINGER PANEL
 // ============================================================
 
-function fingerCard(fng, isPrimary) {
+function _fingerCard(fng, isPrimary) {
   const fm = { 1: 'index', 2: 'middle', 3: 'ring' };
   const vLabel = fng.v.length === 0 ? 'Open horn' : 'Valve ' + fng.v.join('+');
   const fText  = fng.v.length === 0 ? 'No valves pressed' : fng.v.map(v => fm[v]).join(' + ');
@@ -72,7 +70,7 @@ function fingerCard(fng, isPrimary) {
   </div>`;
 }
 
-function legendHTML() {
+function _legendHTML() {
   return `<div class="fp-legend">
     <div class="leg-item"><div class="leg-dot" style="background:var(--ink)"></div>Scale note</div>
     <div class="leg-item"><div class="leg-dot" style="background:var(--copper)"></div>Root</div>
@@ -81,11 +79,10 @@ function legendHTML() {
   </div>`;
 }
 
-export function renderFingerPanel(note, appState, callbacks) {
+function renderFingerPanel(note, appState, callbacks) {
   const panel = document.getElementById('finger-panel');
   const { mode, activeSet, degreeMap, currentRoot, isPlaying, persistSet } = appState;
 
-  // No note selected
   if (!note) {
     if (mode === 'persistent' && persistSet.size > 0) {
       panel.innerHTML = `
@@ -94,8 +91,8 @@ export function renderFingerPanel(note, appState, callbacks) {
           <span>${isPlaying ? '■' : '▶'}</span>
           <span>${isPlaying ? 'Stop' : 'Play Sequence'}</span>
         </button>
-        ${legendHTML()}`;
-      _wireSeqBtn(panel, appState, callbacks);
+        ${_legendHTML()}`;
+      _wireSeqBtn(appState, callbacks);
     } else {
       panel.innerHTML = '<div class="fp-empty">Tap any note<br>on the staff</div>';
     }
@@ -106,10 +103,7 @@ export function renderFingerPanel(note, appState, callbacks) {
   const deg    = degreeMap[note.id];
   const alts   = note.fingerings.slice(1);
 
-  let html = '';
-
-  // Note header
-  html += `<div class="fp-note-header">
+  let html = `<div class="fp-note-header">
     <div class="fp-note-name${isRoot ? ' is-root' : ''}">${note.disp}<span style="font-size:20px;color:var(--ink3);vertical-align:sub;">${note.oct}</span></div>
     <div class="fp-note-meta">
       ${activeSet && deg !== undefined ? `<div class="fp-degree">${ROMANS[deg]}</div>` : ''}
@@ -117,11 +111,8 @@ export function renderFingerPanel(note, appState, callbacks) {
     </div>
   </div>`;
 
-  // Play button
   if (mode === 'transient') {
-    html += `<button class="play-btn" id="note-play-btn">
-      <span>▶</span> <span>Play</span>
-    </button>`;
+    html += `<button class="play-btn" id="note-play-btn"><span>▶</span> <span>Play</span></button>`;
   } else {
     html += `<button class="play-btn${isPlaying ? ' stop' : ''}" id="seq-play-btn">
       <span>${isPlaying ? '■' : '▶'}</span>
@@ -129,14 +120,12 @@ export function renderFingerPanel(note, appState, callbacks) {
     </button>`;
   }
 
-  // Primary fingering
   html += `<div class="fp-label">Primary fingering</div>`;
-  html += fingerCard(note.fingerings[0], true);
+  html += _fingerCard(note.fingerings[0], true);
 
-  // Alternates
   if (alts.length > 0) {
     html += `<div class="alts-container" id="alts-container" style="display:none;">`;
-    alts.forEach(a => { html += fingerCard(a, false); });
+    alts.forEach(a => { html += _fingerCard(a, false); });
     html += `</div>
     <button class="alts-toggle" id="alts-toggle">
       <span id="alts-arrow">▸</span>
@@ -144,21 +133,19 @@ export function renderFingerPanel(note, appState, callbacks) {
     </button>`;
   }
 
-  html += legendHTML();
+  html += _legendHTML();
   panel.innerHTML = html;
 
-  // Wire up play button
   if (mode === 'transient') {
-    const playBtn = document.getElementById('note-play-btn');
-    if (playBtn) playBtn.addEventListener('click', () => callbacks.playNote(note));
+    const btn = document.getElementById('note-play-btn');
+    if (btn) btn.onclick = () => playNote(note);
   } else {
-    _wireSeqBtn(panel, appState, callbacks);
+    _wireSeqBtn(appState, callbacks);
   }
 
-  // Wire up alternates toggle
-  const altsToggleBtn = document.getElementById('alts-toggle');
-  if (altsToggleBtn) {
-    altsToggleBtn.addEventListener('click', () => {
+  const altsBtn = document.getElementById('alts-toggle');
+  if (altsBtn) {
+    altsBtn.onclick = () => {
       const container = document.getElementById('alts-container');
       const arrow     = document.getElementById('alts-arrow');
       const label     = document.getElementById('alts-label');
@@ -167,15 +154,12 @@ export function renderFingerPanel(note, appState, callbacks) {
       container.style.display = showing ? 'none' : 'flex';
       arrow.textContent = showing ? '▸' : '▾';
       label.textContent = showing ? `Show alternates (${alts.length})` : 'Hide alternates';
-    });
+    };
   }
 }
 
-function _wireSeqBtn(panel, appState, callbacks) {
+function _wireSeqBtn(appState, callbacks) {
   const btn = document.getElementById('seq-play-btn');
   if (!btn) return;
-  btn.onclick = () => {
-    if (appState.isPlaying) callbacks.stopSequence();
-    else callbacks.playSequence();
-  };
+  btn.onclick = () => appState.isPlaying ? callbacks.stopSequence() : callbacks.playSequence();
 }

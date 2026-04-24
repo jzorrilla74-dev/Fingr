@@ -1,13 +1,11 @@
-import { ID_SEMI } from './notes.js';
-
 let audioCtx = null;
 
-export function getAudio() {
+function getAudio() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return audioCtx;
 }
 
-export function playNote(note) {
+function playNote(note) {
   const ctx = getAudio();
   const concertSemi = ID_SEMI[note.id] - 2;
   const freq = 440 * Math.pow(2, (concertSemi - 21) / 12);

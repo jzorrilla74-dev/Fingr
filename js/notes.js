@@ -1,4 +1,4 @@
-export const NOTES = [
+const NOTES = [
   {id:'Fs3',disp:'F♯',name:'Fs',oct:3,pos:-6,acc:true, fingerings:[{v:[1,2,3],desc:'standard'}]},
   {id:'G3', disp:'G', name:'G', oct:3,pos:-5,acc:false,fingerings:[{v:[1,3],desc:'standard'}]},
   {id:'Gs3',disp:'G♯',name:'Gs',oct:3,pos:-5,acc:true, fingerings:[{v:[2,3],desc:'standard'}]},
@@ -32,7 +32,7 @@ export const NOTES = [
   {id:'C6', disp:'C', name:'C', oct:6,pos:12,acc:false,fingerings:[{v:[],desc:'open'}]},
 ];
 
-export const ID_SEMI = {
+const ID_SEMI = {
   'Fs3':6,'G3':7,'Gs3':8,'A3':9,'As3':10,'B3':11,
   'C4':12,'Cs4':13,'D4':14,'Ds4':15,'E4':16,
   'F4':17,'Fs4':18,'G4':19,'Gs4':20,'A4':21,'As4':22,'B4':23,
