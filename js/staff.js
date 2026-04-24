@@ -9,16 +9,21 @@ function _getCSSVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-// Compute staff metrics proportional to container height.
-// At containerH ≈ 325 these match the original fixed values (LG=22, SB=212).
+// Compute staff metrics from container height.
+// Natural size is LG=22 at H=325 (original design). On large screens the SVG
+// stays at natural size (CSS centres it vertically). On small screens it scales
+// down so the staff fits within the available space.
 function _staffMetrics(containerH) {
-  const LG     = Math.max(14, containerH * 0.07);
-  const SB     = containerH * 0.64;
-  const NRX    = LG * 0.5;
-  const NRY    = LG * 0.34;
-  const PER    = LG * 1.32;
-  const CLEF_W = LG * 4.5;
-  return { LG, SB, NRX, NRY, PER, CLEF_W };
+  // Scale down only — never exceed the natural LG=22
+  const LG     = Math.min(22, Math.max(12, containerH * (22 / 325)));
+  // SVG height derived from LG (not from container) using original proportions
+  const H      = Math.round(LG * (325 / 22));
+  const SB     = LG * (212 / 22);
+  const NRX    = LG * (11  / 22);
+  const NRY    = LG * (7.5 / 22);
+  const PER    = LG * (29  / 22);
+  const CLEF_W = LG * (100 / 22);
+  return { LG, H, SB, NRX, NRY, PER, CLEF_W };
 }
 
 function staffPY(pos, LG, SB) {
@@ -29,11 +34,10 @@ function drawStaff(containerH, appState, onNoteClick) {
   const svg = document.getElementById('staff-svg');
   svg.innerHTML = '';
 
-  const { LG, SB, NRX, NRY, PER, CLEF_W } = _staffMetrics(containerH);
+  const { LG, H, SB, NRX, NRY, PER, CLEF_W } = _staffMetrics(containerH);
   const { mode, selectedId, persistSet, activeSet, degreeMap, currentRoot, playingId } = appState;
 
   const W = CLEF_W + NOTES.length * PER + 30;
-  const H = containerH;
 
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   svg.setAttribute('width', W);
