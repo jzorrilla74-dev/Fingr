@@ -51,6 +51,7 @@ function highlightPersistCard(id) {
 
 // ============================================================
 // FINGER PANEL
+// renderFingerPanel targets #fp-content, leaving #metro-section untouched.
 // ============================================================
 
 function _fingerCard(fng, isPrimary) {
@@ -80,12 +81,13 @@ function _legendHTML() {
 }
 
 function renderFingerPanel(note, appState, callbacks) {
-  const panel = document.getElementById('finger-panel');
+  // Target only fp-content — the metro-section below it is managed separately
+  const content = document.getElementById('fp-content');
   const { mode, activeSet, degreeMap, currentRoot, isPlaying, persistSet } = appState;
 
   if (!note) {
     if (mode === 'persistent' && persistSet.size > 0) {
-      panel.innerHTML = `
+      content.innerHTML = `
         <div class="fp-empty" style="margin-bottom:8px;">Tap a note to see fingering</div>
         <button class="play-btn${isPlaying ? ' stop' : ''}" id="seq-play-btn">
           <span>${isPlaying ? '■' : '▶'}</span>
@@ -94,7 +96,7 @@ function renderFingerPanel(note, appState, callbacks) {
         ${_legendHTML()}`;
       _wireSeqBtn(appState, callbacks);
     } else {
-      panel.innerHTML = '<div class="fp-empty">Tap any note<br>on the staff</div>';
+      content.innerHTML = '<div class="fp-empty">Tap any note<br>on the staff</div>';
     }
     return;
   }
@@ -134,7 +136,7 @@ function renderFingerPanel(note, appState, callbacks) {
   }
 
   html += _legendHTML();
-  panel.innerHTML = html;
+  content.innerHTML = html;
 
   if (mode === 'transient') {
     const btn = document.getElementById('note-play-btn');
@@ -162,4 +164,85 @@ function _wireSeqBtn(appState, callbacks) {
   const btn = document.getElementById('seq-play-btn');
   if (!btn) return;
   btn.onclick = () => appState.isPlaying ? callbacks.stopSequence() : callbacks.playSequence();
+}
+
+// ============================================================
+// METRONOME PANEL
+// Rendered into #metro-section; survives renderFingerPanel() calls.
+// ============================================================
+
+function renderMetronome(metroState, callbacks) {
+  const section = document.getElementById('metro-section');
+  const { bpm, timeSig, isOn } = metroState;
+  const bpb = { '4/4': 4, '3/4': 3, '6/8': 6 }[timeSig] || 4;
+
+  const dotsHTML = Array.from({ length: bpb }, (_, i) =>
+    `<div class="metro-dot${i === 0 ? ' beat1' : ''}" data-beat="${i}"></div>`
+  ).join('');
+
+  section.innerHTML = `
+    <div class="metro-section">
+      <div class="fp-label">Metronome</div>
+
+      <div class="metro-header">
+        <button class="metro-toggle${isOn ? ' active' : ''}" id="metro-toggle-btn">
+          ${isOn ? '◉ ON' : '○ OFF'}
+        </button>
+        <div class="metro-bpm-wrap">
+          <span class="metro-bpm-num" id="metro-bpm-num">${bpm}</span>
+          <span class="metro-bpm-unit">BPM</span>
+        </div>
+        <button class="metro-tap" id="metro-tap-btn">TAP</button>
+      </div>
+
+      <div class="metro-slider-wrap">
+        <span class="metro-slider-label">40</span>
+        <input type="range" class="metro-slider" id="metro-slider"
+               min="40" max="200" value="${bpm}">
+        <span class="metro-slider-label right">200</span>
+      </div>
+
+      <div class="metro-sigs">
+        ${['4/4', '3/4', '6/8'].map(sig =>
+          `<button class="metro-sig-btn${sig === timeSig ? ' active' : ''}" data-sig="${sig}">${sig}</button>`
+        ).join('')}
+      </div>
+
+      <div class="metro-dots" id="metro-dots">${dotsHTML}</div>
+    </div>`;
+
+  // Wire controls
+  document.getElementById('metro-toggle-btn').onclick = callbacks.onToggle;
+
+  const slider = document.getElementById('metro-slider');
+  slider.oninput = () => {
+    const v = parseInt(slider.value, 10);
+    document.getElementById('metro-bpm-num').textContent = v;
+    callbacks.onBpmChange(v);
+  };
+
+  document.getElementById('metro-tap-btn').onclick = () => {
+    const newBpm = callbacks.onTap();
+    slider.value = newBpm;
+    document.getElementById('metro-bpm-num').textContent = newBpm;
+  };
+
+  section.querySelectorAll('.metro-sig-btn').forEach(btn => {
+    btn.onclick = () => callbacks.onTimeSig(btn.getAttribute('data-sig'));
+  });
+}
+
+// Update just the beat dots — called on every beat (no full re-render)
+function updateMetroBeat(beat, bpb) {
+  const dots = document.querySelectorAll('.metro-dot');
+  if (!dots.length) return;
+  dots.forEach((dot, i) => dot.classList.toggle('active', i === beat));
+}
+
+// Update toggle button state without full re-render
+function updateMetroToggle(isOn) {
+  const btn = document.getElementById('metro-toggle-btn');
+  if (!btn) return;
+  btn.className = 'metro-toggle' + (isOn ? ' active' : '');
+  btn.textContent = isOn ? '◉ ON' : '○ OFF';
 }

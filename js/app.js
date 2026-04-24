@@ -14,6 +14,10 @@ const appState = {
   seqTimeouts: [],
   playingId:   null,
   containerH:  325,
+  // Beat-synced sequence state
+  _seqNotes:   [],
+  _seqIdx:     -1,
+  _seqSynced:  false,
 };
 
 // ============================================================
@@ -41,7 +45,16 @@ function refreshPersistPanel() {
   });
 }
 
-// Update the sequence play button in-place (called mid-sequence)
+function refreshMetronome() {
+  renderMetronome(METRO, {
+    onToggle()        { _metroToggleHandler(); },
+    onBpmChange(bpm)  { metroSetBpm(bpm); },
+    onTap()           { return metroTap(); },
+    onTimeSig(sig)    { _metroTimeSigHandler(sig); },
+  });
+}
+
+// Update seq play button text/colour without re-rendering the whole panel
 function updatePlayBtn() {
   const btn = document.getElementById('seq-play-btn');
   if (!btn) return;
@@ -150,6 +163,7 @@ function updateScale() {
 
 // ============================================================
 // SEQUENCE PLAYBACK
+// Two modes: free-tempo (setTimeout) or beat-synced (onBeat callback)
 // ============================================================
 const SEQ_NOTE_DUR = 0.65;
 const SEQ_GAP      = 0.1;
@@ -157,33 +171,86 @@ const SEQ_GAP      = 0.1;
 function playSequence() {
   if (appState.persistSet.size === 0) return;
   stopSequence();
+
+  appState._seqNotes = NOTES.filter(n => appState.persistSet.has(n.id));
   appState.isPlaying = true;
   updatePlayBtn();
 
-  const sorted = NOTES.filter(n => appState.persistSet.has(n.id));
-
-  sorted.forEach((note, idx) => {
-    const delay = idx * (SEQ_NOTE_DUR + SEQ_GAP) * 1000;
-    appState.seqTimeouts.push(setTimeout(() => playNote(note), delay));
-    appState.seqTimeouts.push(setTimeout(() => {
-      appState.playingId = note.id;
-      redrawStaff();
-      highlightPersistCard(note.id);
-    }, delay));
-    if (idx === sorted.length - 1) {
-      appState.seqTimeouts.push(setTimeout(stopSequence, delay + SEQ_NOTE_DUR * 1000));
-    }
-  });
+  if (METRO.isOn) {
+    // Beat-synced: onBeat callback drives note advancement
+    appState._seqSynced = true;
+    appState._seqIdx    = -1;
+  } else {
+    // Free-tempo: schedule all notes with setTimeout
+    appState._seqSynced = false;
+    appState._seqNotes.forEach((note, idx) => {
+      const delay = idx * (SEQ_NOTE_DUR + SEQ_GAP) * 1000;
+      appState.seqTimeouts.push(setTimeout(() => playNote(note), delay));
+      appState.seqTimeouts.push(setTimeout(() => {
+        appState.playingId = note.id;
+        redrawStaff();
+        highlightPersistCard(note.id);
+      }, delay));
+      if (idx === appState._seqNotes.length - 1) {
+        appState.seqTimeouts.push(
+          setTimeout(stopSequence, delay + SEQ_NOTE_DUR * 1000)
+        );
+      }
+    });
+  }
 }
 
 function stopSequence() {
   appState.seqTimeouts.forEach(t => clearTimeout(t));
   appState.seqTimeouts = [];
-  appState.isPlaying  = false;
-  appState.playingId  = null;
+  appState.isPlaying   = false;
+  appState.playingId   = null;
+  appState._seqSynced  = false;
+  appState._seqIdx     = -1;
+  appState._seqNotes   = [];
   updatePlayBtn();
   redrawStaff();
   refreshPersistPanel();
+}
+
+// Called on each beat by the metronome engine
+function _onBeat(beat, bpb) {
+  // 1. Update beat dot display
+  updateMetroBeat(beat, bpb);
+
+  // 2. Advance beat-synced sequence
+  if (appState.isPlaying && appState._seqSynced) {
+    appState._seqIdx++;
+    if (appState._seqIdx >= appState._seqNotes.length) {
+      stopSequence();
+      return;
+    }
+    const note = appState._seqNotes[appState._seqIdx];
+    playNote(note);
+    appState.playingId = note.id;
+    redrawStaff();
+    highlightPersistCard(note.id);
+  }
+}
+
+// ============================================================
+// METRONOME CONTROL HANDLERS
+// ============================================================
+function _metroToggleHandler() {
+  metroToggle();
+  updateMetroToggle(METRO.isOn);
+  // If sequence is playing free-tempo and metronome just turned on, keep as-is.
+  // If sequence is beat-synced and metronome turns off, stop sequence.
+  if (!METRO.isOn && appState._seqSynced) {
+    stopSequence();
+  }
+}
+
+function _metroTimeSigHandler(sig) {
+  metroSetTimeSig(sig);
+  // Re-render just the metronome section to update dots count and active button
+  refreshMetronome();
+  // If metronome is running, the beat count already resets inside metroSetTimeSig
 }
 
 // ============================================================
@@ -195,6 +262,7 @@ function toggleTheme() {
   document.getElementById('theme-btn').textContent = appState.isDark ? '☾' : '☀';
   const note = appState.selectedId ? NOTES.find(n => n.id === appState.selectedId) : null;
   refreshFingerPanel(note);
+  refreshMetronome();
   redrawStaff();
 }
 
@@ -203,7 +271,6 @@ function toggleTheme() {
 // ============================================================
 function initStaffResize() {
   const scrollEl = document.querySelector('.staff-scroll');
-
   const ro = new ResizeObserver(entries => {
     for (const entry of entries) {
       const h = entry.contentRect.height;
@@ -238,8 +305,16 @@ document.getElementById('root-select').addEventListener('change', onRootChange);
 document.getElementById('theme-btn').addEventListener('click', toggleTheme);
 document.getElementById('persist-clear').addEventListener('click', clearAllPersist);
 
+// Connect metronome beat callback
+METRO.onBeat = _onBeat;
+
+// Render initial metronome UI
+refreshMetronome();
+
+// Staff sizing via ResizeObserver
 initStaffResize();
 
+// Service worker
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }

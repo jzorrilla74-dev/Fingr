@@ -602,3 +602,193 @@ select:focus { border-color: var(--teal); }
   .fp-note-name { font-size: 44px; }
   .fp-degree { font-size: 18px; }
 }
+
+/* ============================================================
+   METRONOME PANEL
+   ============================================================ */
+.metro-section {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Header row: toggle | BPM | tap */
+.metro-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.metro-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--border2);
+  background: var(--bg);
+  color: var(--ink3);
+  font-family: 'Jost', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--transition);
+  flex-shrink: 0;
+  min-height: 30px;
+}
+.metro-toggle.active {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: white;
+}
+
+.metro-bpm-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  flex: 1;
+  justify-content: center;
+}
+.metro-bpm-num {
+  font-family: 'Jost', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+  min-width: 38px;
+  text-align: right;
+  transition: color var(--transition);
+}
+.metro-bpm-unit {
+  font-family: 'Jost', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+
+.metro-tap {
+  padding: 5px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border2);
+  background: var(--bg);
+  color: var(--ink2);
+  font-family: 'Jost', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--transition);
+  flex-shrink: 0;
+  min-height: 30px;
+}
+.metro-tap:active {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: white;
+  transform: scale(0.96);
+}
+
+/* BPM Slider */
+.metro-slider-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.metro-slider-label {
+  font-size: 8px;
+  font-weight: 500;
+  color: var(--ink3);
+  flex-shrink: 0;
+  width: 20px;
+}
+.metro-slider-label.right { text-align: right; }
+
+.metro-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: var(--border2);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.metro-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--teal);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.metro-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--teal);
+  border: none;
+  cursor: pointer;
+}
+
+/* Time signature buttons */
+.metro-sigs {
+  display: flex;
+  gap: 6px;
+}
+.metro-sig-btn {
+  flex: 1;
+  padding: 5px 0;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink3);
+  font-family: 'Jost', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  min-height: 30px;
+}
+.metro-sig-btn.active {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: var(--bg3);
+}
+
+/* Beat indicator dots */
+.metro-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 16px;
+}
+.metro-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border2);
+  transition: background 80ms ease, transform 80ms ease;
+  flex-shrink: 0;
+}
+.metro-dot.beat1 {
+  width: 13px;
+  height: 13px;
+  background: var(--border2);
+}
+.metro-dot.active {
+  background: var(--teal);
+}
+.metro-dot.beat1.active {
+  background: var(--teal);
+  transform: scale(1.15);
+}
