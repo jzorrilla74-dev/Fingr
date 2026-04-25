@@ -2,22 +2,28 @@
 // STATE
 // ============================================================
 const appState = {
-  mode:        'transient',
-  selectedId:  null,
-  persistSet:  new Set(),
-  activeSet:   null,
-  degreeMap:   {},
-  currentType: 'chromatic',
-  currentRoot: 'C',
-  isDark:      false,
-  isPlaying:   false,
-  seqTimeouts: [],
-  playingId:   null,
-  containerH:  325,
-  // Beat-synced sequence state
-  _seqNotes:   [],
-  _seqIdx:     -1,
-  _seqSynced:  false,
+  mode:              'transient',
+  selectedId:        null,
+  persistSet:        new Set(),
+  persistOrder:      [],        // ordered note ids for persistent mode
+  activeSet:         null,
+  degreeMap:         {},
+  currentType:       'chromatic',
+  currentRoot:       'C',
+  isDark:            false,
+  isPlaying:         false,
+  seqTimeouts:       [],
+  playingId:         null,
+  containerH:        325,
+  noteDuration:      1,         // beats per note in beat-synced sequence (1, 2, 4)
+  countIn:           false,     // one-bar count-in before sequence
+  _seqNotes:         [],
+  _seqIdx:           -1,
+  _seqSynced:        false,
+  _seqBeatCount:     0,
+  _isCountingIn:     false,
+  _countInBeat:      0,
+  _metroStartedForSeq: false,   // true when we auto-started metronome for a sequence
 };
 
 // ============================================================
@@ -35,12 +41,23 @@ function refreshPersistPanel() {
   updatePersistPanel(appState, {
     onCardRemove(id) {
       appState.persistSet.delete(id);
+      appState.persistOrder = appState.persistOrder.filter(i => i !== id);
       if (appState.selectedId === id) {
         appState.selectedId = null;
         refreshFingerPanel(null);
       }
+      saveSequence();
       refreshPersistPanel();
       redrawStaff();
+    },
+    onReorder(fromId, toId) {
+      const fi = appState.persistOrder.indexOf(fromId);
+      const ti = appState.persistOrder.indexOf(toId);
+      if (fi < 0 || ti < 0 || fi === ti) return;
+      appState.persistOrder.splice(fi, 1);
+      appState.persistOrder.splice(ti, 0, fromId);
+      saveSequence();
+      refreshPersistPanel();
     },
   });
 }
@@ -51,6 +68,15 @@ function refreshMetronome() {
     onBpmChange(bpm)  { metroSetBpm(bpm); },
     onTap()           { return metroTap(); },
     onTimeSig(sig)    { _metroTimeSigHandler(sig); },
+    onDuration(d)     { appState.noteDuration = d; refreshMetronome(); },
+    onCountIn()       { appState.countIn = !appState.countIn; refreshMetronome(); },
+    onVolume(v)       { setVolume(v); },
+    onMute()          { setMuted(!getMuted()); refreshMetronome(); },
+  }, {
+    noteDuration: appState.noteDuration,
+    countIn:      appState.countIn,
+    volume:       getVolume(),
+    muted:        getMuted(),
   });
 }
 
@@ -63,6 +89,75 @@ function updatePlayBtn() {
     : '<span>▶</span> <span>Play Sequence</span>';
   btn.className = 'play-btn' + (appState.isPlaying ? ' stop' : '');
   btn.onclick = () => appState.isPlaying ? stopSequence() : playSequence();
+}
+
+// ============================================================
+// COUNT-IN DISPLAY
+// ============================================================
+function showCountDisplay(n) {
+  const el = document.getElementById('count-display');
+  if (!el) return;
+  el.textContent = String(n);
+  el.classList.add('visible');
+}
+
+function hideCountDisplay() {
+  const el = document.getElementById('count-display');
+  if (!el) return;
+  el.classList.remove('visible');
+}
+
+// ============================================================
+// SEQUENCE SAVE / RESTORE (localStorage)
+// ============================================================
+function saveSequence() {
+  try {
+    localStorage.setItem('fingr-seq', JSON.stringify({
+      order: appState.persistOrder,
+      type:  appState.currentType,
+      root:  appState.currentRoot,
+    }));
+  } catch (e) {}
+}
+
+function loadSequence() {
+  try {
+    const raw = localStorage.getItem('fingr-seq');
+    if (!raw) return;
+    const { order, type, root } = JSON.parse(raw);
+    if (!Array.isArray(order) || order.length === 0) return;
+
+    if (type) {
+      appState.currentType = type;
+      document.getElementById('type-select').value = type;
+    }
+    if (root) {
+      appState.currentRoot = root;
+      document.getElementById('root-select').value = root;
+    }
+    document.getElementById('root-select').style.display =
+      appState.currentType === 'chromatic' ? 'none' : 'inline-block';
+
+    // updateScale clears persistOrder — restore it after
+    updateScale();
+
+    order.slice(0, 16).forEach(id => {
+      if (NOTES.find(n => n.id === id) && !appState.persistSet.has(id)) {
+        appState.persistSet.add(id);
+        appState.persistOrder.push(id);
+      }
+    });
+
+    if (appState.persistOrder.length > 0) {
+      appState.mode = 'persistent';
+      document.getElementById('btn-persistent').classList.add('active');
+      document.getElementById('btn-transient').classList.remove('active');
+      saveSequence(); // re-save with restored order (updateScale saved empty)
+      refreshPersistPanel();
+      refreshFingerPanel(null);
+      redrawStaff();
+    }
+  } catch (e) {}
 }
 
 // ============================================================
@@ -79,16 +174,20 @@ function handleNoteClick(id) {
   } else {
     if (appState.persistSet.has(id)) {
       appState.persistSet.delete(id);
+      appState.persistOrder = appState.persistOrder.filter(i => i !== id);
       if (appState.selectedId === id) {
         appState.selectedId = null;
         refreshFingerPanel(null);
       }
     } else {
+      if (appState.persistOrder.length >= 16) return;
       appState.persistSet.add(id);
+      appState.persistOrder.push(id);
       appState.selectedId = id;
       playNote(note);
       refreshFingerPanel(note);
     }
+    saveSequence();
     refreshPersistPanel();
   }
   redrawStaff();
@@ -104,6 +203,8 @@ function setMode(m) {
   document.getElementById('btn-persistent').classList.toggle('active', m === 'persistent');
   if (m === 'transient') {
     appState.persistSet.clear();
+    appState.persistOrder = [];
+    saveSequence();
     refreshPersistPanel();
   }
   appState.selectedId = null;
@@ -119,16 +220,19 @@ function onTypeChange() {
   document.getElementById('root-select').style.display =
     appState.currentType === 'chromatic' ? 'none' : 'inline-block';
   updateScale();
+  saveSequence();
 }
 
 function onRootChange() {
   appState.currentRoot = document.getElementById('root-select').value;
   updateScale();
+  saveSequence();
 }
 
 function updateScale() {
   appState.degreeMap = {};
   appState.persistSet.clear();
+  appState.persistOrder = [];
   stopSequence();
   refreshPersistPanel();
   appState.selectedId = null;
@@ -163,23 +267,38 @@ function updateScale() {
 
 // ============================================================
 // SEQUENCE PLAYBACK
-// Two modes: free-tempo (setTimeout) or beat-synced (onBeat callback)
+// Two modes: free-tempo (setTimeout) or beat-synced (onBeat callback).
+// Beat-synced activates when metronome is on OR count-in is enabled.
 // ============================================================
 const SEQ_NOTE_DUR = 0.65;
 const SEQ_GAP      = 0.1;
 
 function playSequence() {
-  if (appState.persistSet.size === 0) return;
+  if (appState.persistOrder.length === 0) return;
   stopSequence();
 
-  appState._seqNotes = NOTES.filter(n => appState.persistSet.has(n.id));
-  appState.isPlaying = true;
+  appState._seqNotes = appState.persistOrder
+    .map(id => NOTES.find(n => n.id === id))
+    .filter(Boolean);
+  appState.isPlaying     = true;
+  // Pre-charge so first note plays on the very first beat (not after noteDuration beats)
+  appState._seqBeatCount = appState.noteDuration - 1;
   updatePlayBtn();
 
-  if (METRO.isOn) {
-    // Beat-synced: onBeat callback drives note advancement
+  if (METRO.isOn || appState.countIn) {
+    // Beat-synced mode
+    if (!METRO.isOn) {
+      metroStart();
+      updateMetroToggle(true);
+      appState._metroStartedForSeq = true;
+    }
     appState._seqSynced = true;
     appState._seqIdx    = -1;
+
+    if (appState.countIn) {
+      appState._isCountingIn = true;
+      appState._countInBeat  = 0;
+    }
   } else {
     // Free-tempo: schedule all notes with setTimeout
     appState._seqSynced = false;
@@ -202,12 +321,23 @@ function playSequence() {
 
 function stopSequence() {
   appState.seqTimeouts.forEach(t => clearTimeout(t));
-  appState.seqTimeouts = [];
-  appState.isPlaying   = false;
-  appState.playingId   = null;
-  appState._seqSynced  = false;
-  appState._seqIdx     = -1;
-  appState._seqNotes   = [];
+  appState.seqTimeouts     = [];
+  appState.isPlaying       = false;
+  appState.playingId       = null;
+  appState._seqSynced      = false;
+  appState._seqIdx         = -1;
+  appState._seqNotes       = [];
+  appState._isCountingIn   = false;
+  appState._countInBeat    = 0;
+  appState._seqBeatCount   = 0;
+
+  if (appState._metroStartedForSeq) {
+    metroStop();
+    updateMetroToggle(false);
+    appState._metroStartedForSeq = false;
+  }
+
+  hideCountDisplay();
   updatePlayBtn();
   redrawStaff();
   refreshPersistPanel();
@@ -215,22 +345,36 @@ function stopSequence() {
 
 // Called on each beat by the metronome engine
 function _onBeat(beat, bpb) {
-  // 1. Update beat dot display
   updateMetroBeat(beat, bpb);
 
-  // 2. Advance beat-synced sequence
-  if (appState.isPlaying && appState._seqSynced) {
-    appState._seqIdx++;
-    if (appState._seqIdx >= appState._seqNotes.length) {
-      stopSequence();
-      return;
+  // Count-in: show beat numbers, don't advance sequence yet
+  if (appState._isCountingIn) {
+    appState._countInBeat++;
+    showCountDisplay(appState._countInBeat);
+    if (appState._countInBeat >= bpb) {
+      appState._isCountingIn = false;
+      setTimeout(hideCountDisplay, 250);
     }
-    const note = appState._seqNotes[appState._seqIdx];
-    playNote(note);
-    appState.playingId = note.id;
-    redrawStaff();
-    highlightPersistCard(note.id);
+    return;
   }
+
+  // Advance beat-synced sequence
+  if (!appState.isPlaying || !appState._seqSynced) return;
+
+  appState._seqBeatCount++;
+  if (appState._seqBeatCount < appState.noteDuration) return;
+  appState._seqBeatCount = 0;
+
+  appState._seqIdx++;
+  if (appState._seqIdx >= appState._seqNotes.length) {
+    stopSequence();
+    return;
+  }
+  const note = appState._seqNotes[appState._seqIdx];
+  playNote(note);
+  appState.playingId = note.id;
+  redrawStaff();
+  highlightPersistCard(note.id);
 }
 
 // ============================================================
@@ -239,18 +383,15 @@ function _onBeat(beat, bpb) {
 function _metroToggleHandler() {
   metroToggle();
   updateMetroToggle(METRO.isOn);
-  // If sequence is playing free-tempo and metronome just turned on, keep as-is.
-  // If sequence is beat-synced and metronome turns off, stop sequence.
-  if (!METRO.isOn && appState._seqSynced) {
-    stopSequence();
+  if (!METRO.isOn) {
+    if (appState._seqSynced) stopSequence();
+    appState._metroStartedForSeq = false;
   }
 }
 
 function _metroTimeSigHandler(sig) {
   metroSetTimeSig(sig);
-  // Re-render just the metronome section to update dots count and active button
   refreshMetronome();
-  // If metronome is running, the beat count already resets inside metroSetTimeSig
 }
 
 // ============================================================
@@ -289,7 +430,9 @@ function initStaffResize() {
 function clearAllPersist() {
   stopSequence();
   appState.persistSet.clear();
+  appState.persistOrder = [];
   appState.selectedId = null;
+  saveSequence();
   refreshPersistPanel();
   refreshFingerPanel(null);
   redrawStaff();
@@ -313,6 +456,9 @@ refreshMetronome();
 
 // Staff sizing via ResizeObserver
 initStaffResize();
+
+// Restore saved sequence from localStorage
+loadSequence();
 
 // Service worker
 if ('serviceWorker' in navigator) {

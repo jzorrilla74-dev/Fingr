@@ -792,3 +792,163 @@ select:focus { border-color: var(--teal); }
   background: var(--teal);
   transform: scale(1.15);
 }
+
+/* ============================================================
+   COUNT-IN DISPLAY
+   ============================================================ */
+.count-display {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Jost', sans-serif;
+  font-size: 96px;
+  font-weight: 700;
+  color: var(--teal);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 200;
+  line-height: 1;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.12);
+  transition: opacity 60ms ease;
+  user-select: none;
+}
+.count-display.visible { opacity: 1; }
+
+/* ============================================================
+   VOLUME / MUTE
+   ============================================================ */
+.metro-vol-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.metro-mute-btn {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border2);
+  background: var(--bg);
+  color: var(--ink2);
+  font-family: 'Jost', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--transition);
+  min-height: 28px;
+}
+.metro-mute-btn.muted {
+  background: var(--copper);
+  border-color: var(--copper);
+  color: white;
+}
+
+.metro-vol-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: var(--border2);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.metro-vol-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ink2);
+  cursor: pointer;
+}
+.metro-vol-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ink2);
+  border: none;
+  cursor: pointer;
+}
+
+/* ============================================================
+   BEATS/NOTE + COUNT-IN ROW
+   ============================================================ */
+.metro-seq-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.metro-seq-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.metro-durs {
+  display: flex;
+  gap: 4px;
+}
+
+.metro-dur-btn {
+  width: 26px;
+  height: 22px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink3);
+  font-family: 'Jost', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.metro-dur-btn.active {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: var(--bg3);
+}
+
+.metro-countin-btn {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink3);
+  font-family: 'Jost', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--transition);
+  min-height: 28px;
+  white-space: nowrap;
+}
+.metro-countin-btn.active {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: var(--bg3);
+}
+
+/* ============================================================
+   DRAG TO REORDER
+   ============================================================ */
+.persist-card.dragging {
+  opacity: 0.35;
+  cursor: grabbing;
+}
+.persist-card.drag-over {
+  border-color: var(--teal) !important;
+  background: var(--bg3);
+  transform: scale(1.06);
+}

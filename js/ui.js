@@ -2,21 +2,29 @@
 // PERSISTENT PANEL
 // ============================================================
 
+let _dragId = null; // drag-to-reorder state
+
 function updatePersistPanel(appState, callbacks) {
   const panel  = document.getElementById('persist-panel');
   const scroll = document.getElementById('persist-scroll');
-  const { persistSet, activeSet, degreeMap, currentRoot, playingId } = appState;
+  const { persistSet, persistOrder = [], activeSet, degreeMap, currentRoot, playingId } = appState;
 
-  if (persistSet.size === 0) {
+  const sorted = persistOrder.length > 0
+    ? persistOrder.map(id => NOTES.find(n => n.id === id)).filter(Boolean)
+    : NOTES.filter(n => persistSet.has(n.id));
+
+  const clearBtn = document.getElementById('persist-clear');
+
+  if (sorted.length === 0) {
     panel.classList.remove('has-notes');
     scroll.innerHTML = '';
+    if (clearBtn) clearBtn.textContent = 'Clear all';
     return;
   }
 
   panel.classList.add('has-notes');
-  const sorted = NOTES.filter(n => persistSet.has(n.id));
-
   scroll.innerHTML = '';
+
   sorted.forEach(note => {
     const isRoot = activeSet && NOTE_SEMI[note.name] === NOTE_SEMI[currentRoot];
     const deg    = degreeMap[note.id];
@@ -27,6 +35,7 @@ function updatePersistPanel(appState, callbacks) {
       + (isRoot ? ' is-root' : '')
       + (playingId === note.id ? ' playing' : '');
     card.setAttribute('data-id', note.id);
+    card.draggable = true;
 
     const dotsHTML = [1, 2, 3].map(v =>
       `<div class="pc-dot${fng.v.includes(v) ? ' pressed' : ''}"></div>`
@@ -39,13 +48,43 @@ function updatePersistPanel(appState, callbacks) {
     `;
 
     card.addEventListener('click', () => callbacks.onCardRemove(note.id));
+
+    card.addEventListener('dragstart', e => {
+      e.dataTransfer.effectAllowed = 'move';
+      _dragId = note.id;
+      card.classList.add('dragging');
+    });
+    card.addEventListener('dragend', () => {
+      _dragId = null;
+      card.classList.remove('dragging');
+      document.querySelectorAll('.persist-card').forEach(c => c.classList.remove('drag-over'));
+    });
+    card.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (_dragId !== note.id) {
+        document.querySelectorAll('.persist-card').forEach(c => c.classList.remove('drag-over'));
+        card.classList.add('drag-over');
+      }
+    });
+    card.addEventListener('drop', e => {
+      e.preventDefault();
+      if (_dragId && _dragId !== note.id) callbacks.onReorder(_dragId, note.id);
+      _dragId = null;
+    });
+
     scroll.appendChild(card);
   });
+
+  if (clearBtn) {
+    const n = sorted.length;
+    clearBtn.textContent = n >= 16 ? `Clear · ${n}/16 MAX` : `Clear · ${n}/16`;
+  }
 }
 
 function highlightPersistCard(id) {
   document.querySelectorAll('.persist-card').forEach(c => {
-    c.style.borderColor = c.getAttribute('data-id') === id ? 'var(--teal)' : '';
+    c.classList.toggle('playing', c.getAttribute('data-id') === id);
   });
 }
 
@@ -81,12 +120,11 @@ function _legendHTML() {
 }
 
 function renderFingerPanel(note, appState, callbacks) {
-  // Target only fp-content — the metro-section below it is managed separately
   const content = document.getElementById('fp-content');
-  const { mode, activeSet, degreeMap, currentRoot, isPlaying, persistSet } = appState;
+  const { mode, activeSet, degreeMap, currentRoot, isPlaying, persistOrder = [] } = appState;
 
   if (!note) {
-    if (mode === 'persistent' && persistSet.size > 0) {
+    if (mode === 'persistent' && persistOrder.length > 0) {
       content.innerHTML = `
         <div class="fp-empty" style="margin-bottom:8px;">Tap a note to see fingering</div>
         <button class="play-btn${isPlaying ? ' stop' : ''}" id="seq-play-btn">
@@ -171,13 +209,18 @@ function _wireSeqBtn(appState, callbacks) {
 // Rendered into #metro-section; survives renderFingerPanel() calls.
 // ============================================================
 
-function renderMetronome(metroState, callbacks) {
+function renderMetronome(metroState, callbacks, uiState) {
   const section = document.getElementById('metro-section');
   const { bpm, timeSig, isOn } = metroState;
+  const { noteDuration = 1, countIn = false, volume = 0.75, muted = false } = uiState || {};
   const bpb = { '4/4': 4, '3/4': 3, '6/8': 6 }[timeSig] || 4;
 
   const dotsHTML = Array.from({ length: bpb }, (_, i) =>
     `<div class="metro-dot${i === 0 ? ' beat1' : ''}" data-beat="${i}"></div>`
+  ).join('');
+
+  const durHTML = [1, 2, 4].map(d =>
+    `<button class="metro-dur-btn${d === noteDuration ? ' active' : ''}" data-dur="${d}">${d}</button>`
   ).join('');
 
   section.innerHTML = `
@@ -209,9 +252,24 @@ function renderMetronome(metroState, callbacks) {
       </div>
 
       <div class="metro-dots" id="metro-dots">${dotsHTML}</div>
+
+      <div class="metro-vol-row">
+        <button class="metro-mute-btn${muted ? ' muted' : ''}" id="metro-mute-btn">${muted ? 'Muted' : 'Sound'}</button>
+        <input type="range" class="metro-vol-slider" id="metro-vol-slider"
+               min="0" max="100" value="${Math.round(volume * 100)}">
+      </div>
+
+      <div class="metro-seq-row">
+        <div class="metro-seq-label">
+          <span class="fp-label">Beats/note</span>
+          <div class="metro-durs">${durHTML}</div>
+        </div>
+        <button class="metro-countin-btn${countIn ? ' active' : ''}" id="metro-countin-btn">
+          ${countIn ? '◉' : '○'} Count-in
+        </button>
+      </div>
     </div>`;
 
-  // Wire controls
   document.getElementById('metro-toggle-btn').onclick = callbacks.onToggle;
 
   const slider = document.getElementById('metro-slider');
@@ -230,6 +288,17 @@ function renderMetronome(metroState, callbacks) {
   section.querySelectorAll('.metro-sig-btn').forEach(btn => {
     btn.onclick = () => callbacks.onTimeSig(btn.getAttribute('data-sig'));
   });
+
+  section.querySelectorAll('.metro-dur-btn').forEach(btn => {
+    btn.onclick = () => callbacks.onDuration(parseInt(btn.getAttribute('data-dur'), 10));
+  });
+
+  document.getElementById('metro-countin-btn').onclick = callbacks.onCountIn;
+
+  document.getElementById('metro-mute-btn').onclick = callbacks.onMute;
+
+  const volSlider = document.getElementById('metro-vol-slider');
+  volSlider.oninput = () => callbacks.onVolume(parseInt(volSlider.value, 10) / 100);
 }
 
 // Update just the beat dots — called on every beat (no full re-render)
