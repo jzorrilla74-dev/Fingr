@@ -102,12 +102,24 @@ function drawStaff(containerH, appState, onNoteClick) {
     }
 
     // Glow ring for persistent-selected or currently playing
-    if ((isSel && mode === 'persistent') || isPlaying) {
+    if (isPlaying) {
+      // Outer soft halo
+      svg.appendChild(_se('ellipse', {
+        cx: x, cy: y, rx: NRX + 14, ry: NRY + 14,
+        fill: teal, opacity: 0.22
+      }));
+      // Inner ring
+      svg.appendChild(_se('ellipse', {
+        cx: x, cy: y, rx: NRX + 7, ry: NRY + 7,
+        fill: teal, stroke: teal, 'stroke-width': 2.5,
+        opacity: 0.55
+      }));
+    } else if (isSel && mode === 'persistent') {
       svg.appendChild(_se('ellipse', {
         cx: x, cy: y, rx: NRX + 5, ry: NRY + 5,
-        fill: isPlaying ? teal : 'none',
+        fill: 'none',
         stroke: teal, 'stroke-width': 1.5,
-        opacity: isPlaying ? 0.25 : 0.4
+        opacity: 0.5
       }));
     }
 

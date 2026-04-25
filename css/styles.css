@@ -506,7 +506,12 @@ select:focus { border-color: var(--teal); }
 }
 .persist-card:active { transform: scale(0.95); }
 .persist-card.is-root { border-color: var(--copper); }
-.persist-card.playing { border-color: var(--teal); }
+.persist-card.playing {
+  border-color: var(--teal);
+  border-width: 2.5px;
+  background: rgba(91, 188, 184, 0.12);
+  box-shadow: 0 0 0 3px rgba(91, 188, 184, 0.22), 0 2px 10px rgba(91, 188, 184, 0.18);
+}
 
 .pc-name {
   font-family: 'Jost', sans-serif;
