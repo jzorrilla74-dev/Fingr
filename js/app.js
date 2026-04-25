@@ -31,6 +31,9 @@ const appState = {
   _isBreathing:      false,
   _breathCount:      0,
   _metroStartedForSeq: false,
+  _waitingForBeat1:  false,
+  // Panel resize
+  _persistPanelH:    96,
 };
 
 // ============================================================
@@ -42,6 +45,19 @@ function redrawStaff() {
 
 function refreshFingerPanel(note) {
   renderFingerPanel(note, appState, { playNote, playSequence, stopSequence });
+}
+
+function _syncPersistPanel() {
+  const panel  = document.getElementById('persist-panel');
+  const handle = document.getElementById('resize-handle');
+  const hasNotes = appState.persistOrder.length > 0;
+  if (hasNotes) {
+    panel.style.height = appState._persistPanelH + 'px';
+    if (handle) handle.classList.add('visible');
+  } else {
+    panel.style.height = '0';
+    if (handle) handle.classList.remove('visible');
+  }
 }
 
 function refreshPersistPanel() {
@@ -67,6 +83,7 @@ function refreshPersistPanel() {
       refreshPersistPanel();
     },
   });
+  _syncPersistPanel();
 }
 
 function refreshMetronome() {
@@ -341,13 +358,9 @@ function playSequence() {
       updateMetroToggle(true);
       appState._metroStartedForSeq = true;
     }
-    appState._seqSynced = true;
-    appState._seqIdx    = -1;
-
-    if (appState.countIn) {
-      appState._isCountingIn = true;
-      appState._countInBeat  = 0;
-    }
+    appState._seqSynced      = true;
+    appState._seqIdx         = -1;
+    appState._waitingForBeat1 = true;
   } else {
     appState._seqSynced = false;
     _playSeqFree();
@@ -356,17 +369,18 @@ function playSequence() {
 
 function stopSequence() {
   appState.seqTimeouts.forEach(t => clearTimeout(t));
-  appState.seqTimeouts     = [];
-  appState.isPlaying       = false;
-  appState.playingId       = null;
-  appState._seqSynced      = false;
-  appState._seqIdx         = -1;
-  appState._seqNotes       = [];
-  appState._isCountingIn   = false;
-  appState._countInBeat    = 0;
-  appState._seqBeatCount   = 0;
-  appState._isBreathing    = false;
-  appState._breathCount    = 0;
+  appState.seqTimeouts      = [];
+  appState.isPlaying        = false;
+  appState.playingId        = null;
+  appState._seqSynced       = false;
+  appState._seqIdx          = -1;
+  appState._seqNotes        = [];
+  appState._isCountingIn    = false;
+  appState._countInBeat     = 0;
+  appState._seqBeatCount    = 0;
+  appState._isBreathing     = false;
+  appState._breathCount     = 0;
+  appState._waitingForBeat1 = false;
 
   if (appState._metroStartedForSeq) {
     metroStop();
@@ -384,6 +398,19 @@ function stopSequence() {
 function _onBeat(beat, bpb) {
   updateMetroBeat(beat, bpb);
 
+  if (!appState.isPlaying || !appState._seqSynced) return;
+
+  // Hold until beat 1 of a bar before starting count-in or sequence
+  if (appState._waitingForBeat1) {
+    if (beat !== 0) return;
+    appState._waitingForBeat1 = false;
+    if (appState.countIn) {
+      appState._isCountingIn = true;
+      appState._countInBeat  = 0;
+    }
+    // fall through — either into count-in handler or straight to sequence
+  }
+
   // Count-in: show beat numbers, hold sequence
   if (appState._isCountingIn) {
     appState._countInBeat++;
@@ -395,12 +422,12 @@ function _onBeat(beat, bpb) {
     return;
   }
 
-  if (!appState.isPlaying || !appState._seqSynced) return;
-
-  // Breath between loop repetitions
+  // Breath between loop repetitions.
+  // Only release on the last beat of a bar so the next note lands on beat 1.
   if (appState._isBreathing) {
     appState._breathCount++;
-    if (appState._breathCount >= appState.breathDuration) {
+    const nextBeat = (beat + 1) % bpb;
+    if (appState._breathCount >= appState.breathDuration && nextBeat === 0) {
       appState._isBreathing  = false;
       appState._breathCount  = 0;
       appState._seqIdx       = -1;
@@ -465,6 +492,61 @@ function toggleTheme() {
 }
 
 // ============================================================
+// PANEL RESIZE — drag handle between main and persist panel
+// ============================================================
+function initPanelResize() {
+  const handle = document.getElementById('resize-handle');
+  const panel  = document.getElementById('persist-panel');
+  if (!handle || !panel) return;
+
+  let dragging = false;
+  let startY   = 0;
+  let startH   = 0;
+
+  function onStart(y) {
+    dragging = true;
+    startY   = y;
+    startH   = panel.offsetHeight;
+    handle.classList.add('dragging');
+    document.body.style.cursor     = 'row-resize';
+    document.body.style.userSelect = 'none';
+  }
+
+  function onMove(y) {
+    if (!dragging) return;
+    const minH = 60;
+    const maxH = Math.floor(window.innerHeight * 0.75);
+    const newH = Math.max(minH, Math.min(startH + (startY - y), maxH));
+    panel.style.height = newH + 'px';
+    appState._persistPanelH = newH;
+  }
+
+  function onEnd() {
+    if (!dragging) return;
+    dragging = false;
+    handle.classList.remove('dragging');
+    document.body.style.cursor     = '';
+    document.body.style.userSelect = '';
+    try { localStorage.setItem('fingr-persist-h', String(appState._persistPanelH)); } catch(e) {}
+  }
+
+  handle.addEventListener('mousedown',  e => { e.preventDefault(); onStart(e.clientY); });
+  document.addEventListener('mousemove', e => { if (dragging) onMove(e.clientY); });
+  document.addEventListener('mouseup',   onEnd);
+
+  handle.addEventListener('touchstart',  e => { e.preventDefault(); onStart(e.touches[0].clientY); }, { passive: false });
+  document.addEventListener('touchmove', e => { if (dragging) { e.preventDefault(); onMove(e.touches[0].clientY); } }, { passive: false });
+  document.addEventListener('touchend',  onEnd);
+}
+
+function loadPersistPanelH() {
+  try {
+    const saved = parseInt(localStorage.getItem('fingr-persist-h'), 10);
+    if (!isNaN(saved) && saved >= 60) appState._persistPanelH = saved;
+  } catch(e) {}
+}
+
+// ============================================================
 // STAFF SIZING — ResizeObserver
 // ============================================================
 function initStaffResize() {
@@ -507,8 +589,10 @@ document.getElementById('persist-clear').addEventListener('click', clearAllPersi
 
 METRO.onBeat = _onBeat;
 
+loadPersistPanelH();
 refreshMetronome();
 initStaffResize();
+initPanelResize();
 loadSequence();
 
 if ('serviceWorker' in navigator) {

@@ -471,12 +471,10 @@ select:focus { border-color: var(--teal); }
   height: 0;
   overflow: hidden;
   background: var(--bg2);
-  border-top: 1px solid var(--border);
-  transition: height var(--transition), background var(--transition);
   display: flex;
   align-items: center;
+  transition: background var(--transition);
 }
-.persist-panel.has-notes { height: var(--persist-h); }
 
 .persist-scroll {
   flex: 1;
@@ -557,6 +555,34 @@ select:focus { border-color: var(--teal); }
   min-height: 32px;
 }
 .persist-clear:hover { border-color: var(--copper); color: var(--copper); }
+
+/* ============================================================
+   RESIZE HANDLE (between main and persist panel)
+   ============================================================ */
+.resize-handle {
+  flex-shrink: 0;
+  height: 8px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  cursor: row-resize;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  transition: background var(--transition);
+  z-index: 10;
+}
+.resize-handle.visible { display: flex; }
+.resize-handle::after {
+  content: '';
+  width: 36px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--border2);
+  transition: background var(--transition);
+}
+.resize-handle:hover::after,
+.resize-handle.dragging::after { background: var(--teal); }
 
 /* ============================================================
    RESPONSIVE — iPad landscape (768–1023px)
