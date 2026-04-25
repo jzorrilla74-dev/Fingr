@@ -2,7 +2,7 @@
 // PERSISTENT PANEL
 // ============================================================
 
-let _dragId = null; // drag-to-reorder state
+let _dragId = null;
 
 function updatePersistPanel(appState, callbacks) {
   const panel  = document.getElementById('persist-panel');
@@ -84,7 +84,7 @@ function updatePersistPanel(appState, callbacks) {
 
 function highlightPersistCard(id) {
   document.querySelectorAll('.persist-card').forEach(c => {
-    c.classList.toggle('playing', c.getAttribute('data-id') === id);
+    c.classList.toggle('playing', id !== null && c.getAttribute('data-id') === id);
   });
 }
 
@@ -97,14 +97,18 @@ function _fingerCard(fng, isPrimary) {
   const fm = { 1: 'index', 2: 'middle', 3: 'ring' };
   const vLabel = fng.v.length === 0 ? 'Open horn' : 'Valve ' + fng.v.join('+');
   const fText  = fng.v.length === 0 ? 'No valves pressed' : fng.v.map(v => fm[v]).join(' + ');
+  const vClass = isPrimary ? 'valve valve-lg' : 'valve';
+  const lblClass = isPrimary ? 'vlbl vlbl-lg' : 'vlbl';
   return `<div class="fing-card${isPrimary ? ' primary' : ''}">
     <div class="valve-label-row">
-      <div class="vlbl">1st</div><div class="vlbl">2nd</div><div class="vlbl">3rd</div>
+      <div class="${lblClass}">1st</div>
+      <div class="${lblClass}">2nd</div>
+      <div class="${lblClass}">3rd</div>
     </div>
     <div class="valve-row">
-      <div class="valve${fng.v.includes(1) ? ' pressed' : ''}">1</div>
-      <div class="valve${fng.v.includes(2) ? ' pressed' : ''}">2</div>
-      <div class="valve${fng.v.includes(3) ? ' pressed' : ''}">3</div>
+      <div class="${vClass}${fng.v.includes(1) ? ' pressed' : ''}">1</div>
+      <div class="${vClass}${fng.v.includes(2) ? ' pressed' : ''}">2</div>
+      <div class="${vClass}${fng.v.includes(3) ? ' pressed' : ''}">3</div>
     </div>
     <div class="fing-desc"><strong>${vLabel}</strong> · ${fng.desc}<br>${fText}</div>
   </div>`;
@@ -212,7 +216,10 @@ function _wireSeqBtn(appState, callbacks) {
 function renderMetronome(metroState, callbacks, uiState) {
   const section = document.getElementById('metro-section');
   const { bpm, timeSig, isOn } = metroState;
-  const { noteDuration = 1, countIn = false, volume = 0.75, muted = false } = uiState || {};
+  const {
+    noteDuration = 1, countIn = false, volume = 0.75, muted = false,
+    playOrder = 'sequential', loopEnabled = false, breathDuration = 2,
+  } = uiState || {};
   const bpb = { '4/4': 4, '3/4': 3, '6/8': 6 }[timeSig] || 4;
 
   const dotsHTML = Array.from({ length: bpb }, (_, i) =>
@@ -221,6 +228,10 @@ function renderMetronome(metroState, callbacks, uiState) {
 
   const durHTML = [1, 2, 4].map(d =>
     `<button class="metro-dur-btn${d === noteDuration ? ' active' : ''}" data-dur="${d}">${d}</button>`
+  ).join('');
+
+  const breathHTML = [1, 2, 3, 4].map(d =>
+    `<button class="metro-dur-btn${d === breathDuration ? ' active' : ''}" data-breath="${d}">${d}</button>`
   ).join('');
 
   section.innerHTML = `
@@ -268,6 +279,24 @@ function renderMetronome(metroState, callbacks, uiState) {
           ${countIn ? '◉' : '○'} Count-in
         </button>
       </div>
+
+      <div class="metro-order-row">
+        <span class="fp-label">Order</span>
+        <div class="metro-durs">
+          <button class="metro-order-btn${playOrder === 'sequential' ? ' active' : ''}" data-order="sequential">Seq</button>
+          <button class="metro-order-btn${playOrder === 'ascending' ? ' active' : ''}" data-order="ascending">Asc</button>
+        </div>
+        <button class="metro-loop-btn${loopEnabled ? ' active' : ''}" id="metro-loop-btn">
+          ${loopEnabled ? '◉' : '○'} Loop
+        </button>
+      </div>
+
+      ${loopEnabled ? `
+      <div class="metro-breath-row">
+        <span class="fp-label">Breath</span>
+        <div class="metro-durs">${breathHTML}</div>
+        <span class="fp-label" style="margin-left:2px;">beats</span>
+      </div>` : ''}
     </div>`;
 
   document.getElementById('metro-toggle-btn').onclick = callbacks.onToggle;
@@ -289,11 +318,21 @@ function renderMetronome(metroState, callbacks, uiState) {
     btn.onclick = () => callbacks.onTimeSig(btn.getAttribute('data-sig'));
   });
 
-  section.querySelectorAll('.metro-dur-btn').forEach(btn => {
+  section.querySelectorAll('.metro-dur-btn[data-dur]').forEach(btn => {
     btn.onclick = () => callbacks.onDuration(parseInt(btn.getAttribute('data-dur'), 10));
   });
 
+  section.querySelectorAll('.metro-dur-btn[data-breath]').forEach(btn => {
+    btn.onclick = () => callbacks.onBreath(parseInt(btn.getAttribute('data-breath'), 10));
+  });
+
   document.getElementById('metro-countin-btn').onclick = callbacks.onCountIn;
+
+  document.getElementById('metro-loop-btn').onclick = callbacks.onLoop;
+
+  section.querySelectorAll('.metro-order-btn').forEach(btn => {
+    btn.onclick = () => callbacks.onPlayOrder(btn.getAttribute('data-order'));
+  });
 
   document.getElementById('metro-mute-btn').onclick = callbacks.onMute;
 

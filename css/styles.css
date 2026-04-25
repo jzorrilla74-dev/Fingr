@@ -50,6 +50,7 @@
 *, *::before, *::after {
   margin: 0; padding: 0; box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; /* kill 300ms tap delay on iOS */
 }
 html, body { height: 100%; overflow: hidden; }
 
@@ -59,24 +60,33 @@ body {
   font-family: 'Jost', sans-serif;
   font-size: 13px;
   height: 100vh;
+  /* iOS safe areas */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left:   env(safe-area-inset-left,   0px);
+  padding-right:  env(safe-area-inset-right,  0px);
   display: flex;
   flex-direction: column;
   transition: background var(--transition), color var(--transition);
   -webkit-font-smoothing: antialiased;
+  /* prevent rubber-band scroll on iOS */
+  position: fixed;
+  width: 100%;
 }
 
 /* ============================================================
    TOP BAR
    ============================================================ */
 .topbar {
-  height: var(--topbar-h);
+  height: calc(var(--topbar-h) + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
   flex-shrink: 0;
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 16px));
+  padding-right: max(16px, env(safe-area-inset-right, 16px));
   transition: background var(--transition);
 }
 
@@ -379,6 +389,20 @@ select:focus { border-color: var(--teal); }
   flex-shrink: 0;
   transition: all var(--transition);
 }
+/* Primary fingering — larger valves for clear visual weight */
+.valve.valve-lg {
+  width: 54px; height: 54px;
+  border-width: 2.5px;
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+}
+.valve.valve-lg.pressed {
+  box-shadow: 0 2px 12px rgba(91,188,184,0.25);
+}
+.vlbl.vlbl-lg {
+  width: 54px;
+  font-size: 9px;
+}
 .valve.pressed {
   background: var(--ink);
   border-color: var(--ink);
@@ -389,6 +413,9 @@ select:focus { border-color: var(--teal); }
   border-color: var(--teal);
   color: var(--bg);
 }
+.fing-card.primary { padding: 12px 14px; }
+.fing-card.primary .valve-label-row { margin-bottom: 6px; }
+.fing-card.primary .valve-row { gap: 12px; margin-bottom: 10px; }
 
 .fing-desc {
   font-size: 9px;
@@ -951,4 +978,78 @@ select:focus { border-color: var(--teal); }
   border-color: var(--teal) !important;
   background: var(--bg3);
   transform: scale(1.06);
+}
+
+/* ============================================================
+   PLAY ORDER + LOOP + BREATH
+   ============================================================ */
+.metro-order-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.metro-order-btn {
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink3);
+  font-family: 'Jost', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--transition);
+  min-height: 26px;
+}
+.metro-order-btn.active {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: var(--bg3);
+}
+.metro-loop-btn {
+  margin-left: auto;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink3);
+  font-family: 'Jost', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--transition);
+  min-height: 26px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.metro-loop-btn.active {
+  border-color: var(--copper);
+  color: var(--copper);
+  background: var(--bg3);
+}
+.metro-breath-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ============================================================
+   iOS SAFE AREA — persist panel
+   ============================================================ */
+.persist-panel {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ============================================================
+   iOS RESPONSIVE TOPBAR — safe area on small phones
+   ============================================================ */
+@media (max-width: 479px) {
+  .topbar {
+    height: auto;
+    padding-top: max(8px, env(safe-area-inset-top, 8px));
+  }
 }

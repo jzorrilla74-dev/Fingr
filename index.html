@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+
+<!-- iOS PWA -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fingr">
@@ -12,7 +14,45 @@
 <title>Fingr</title>
 
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icons/icon.svg">
+
+<!-- Apple touch icons — largest first (iOS picks best size) -->
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png">
+<link rel="apple-touch-icon" sizes="114x114" href="icons/icon-114.png">
+<link rel="apple-touch-icon" sizes="76x76"   href="icons/icon-76.png">
+<link rel="apple-touch-icon" sizes="72x72"   href="icons/icon-72.png">
+<link rel="apple-touch-icon" sizes="60x60"   href="icons/icon-60.png">
+<link rel="apple-touch-icon" sizes="57x57"   href="icons/icon-57.png">
+
+<!-- iOS splash screens — portrait orientation -->
+<!-- iPhone SE (1st/2nd gen) -->
+<link rel="apple-touch-startup-image" media="screen and (device-width:320px) and (device-height:568px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" href="icons/splash-iphone-se.png">
+<!-- iPhone 8 / SE 3rd gen -->
+<link rel="apple-touch-startup-image" media="screen and (device-width:375px) and (device-height:667px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" href="icons/splash-iphone-8.png">
+<!-- iPhone 8 Plus -->
+<link rel="apple-touch-startup-image" media="screen and (device-width:414px) and (device-height:736px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="icons/splash-iphone-8plus.png">
+<!-- iPhone X / XS / 11 Pro -->
+<link rel="apple-touch-startup-image" media="screen and (device-width:375px) and (device-height:812px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="icons/splash-iphone-x.png">
+<!-- iPhone XR / 11 -->
+<link rel="apple-touch-startup-image" media="screen and (device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" href="icons/splash-iphone-xr.png">
+<!-- iPhone 12 / 13 / 14 -->
+<link rel="apple-touch-startup-image" media="screen and (device-width:390px) and (device-height:844px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="icons/splash-iphone-12.png">
+<!-- iPhone 12 Pro Max / 13 Pro Max / 14 Plus -->
+<link rel="apple-touch-startup-image" media="screen and (device-width:428px) and (device-height:926px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="icons/splash-iphone-12max.png">
+<!-- iPhone 14 Pro -->
+<link rel="apple-touch-startup-image" media="screen and (device-width:393px) and (device-height:852px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="icons/splash-iphone-14pro.png">
+<!-- iPhone 14 Pro Max / 15 Pro Max -->
+<link rel="apple-touch-startup-image" media="screen and (device-width:430px) and (device-height:932px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" href="icons/splash-iphone-14promax.png">
+<!-- iPad (all Retina) -->
+<link rel="apple-touch-startup-image" media="screen and (device-width:768px) and (device-height:1024px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" href="icons/splash-ipad.png">
+<!-- iPad Pro 11" -->
+<link rel="apple-touch-startup-image" media="screen and (device-width:834px) and (device-height:1194px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" href="icons/splash-ipad-pro11.png">
+<!-- iPad Pro 12.9" -->
+<link rel="apple-touch-startup-image" media="screen and (device-width:1024px) and (device-height:1366px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" href="icons/splash-ipad-pro12.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -91,7 +131,6 @@
     </div>
   </div>
 
-  <!-- Finger panel: fp-content is replaced per note; metro-section is persistent -->
   <div class="finger-panel" id="finger-panel">
     <div id="fp-content">
       <div class="fp-empty">Tap any note<br>on the staff</div>
@@ -109,7 +148,6 @@
   <button class="persist-clear" id="persist-clear">Clear all</button>
 </div>
 
-<!-- Scripts loaded in dependency order -->
 <script src="js/notes.js"></script>
 <script src="js/scales.js"></script>
 <script src="js/audio.js"></script>

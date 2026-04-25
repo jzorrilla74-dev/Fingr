@@ -1,4 +1,4 @@
-const CACHE = 'fingr-v1';
+const CACHE = 'fingr-v3';
 const ASSETS = [
   '/',
   '/index.html',
@@ -12,6 +12,30 @@ const ASSETS = [
   '/js/ui.js',
   '/js/app.js',
   '/icons/icon.svg',
+  '/icons/icon-57.png',
+  '/icons/icon-60.png',
+  '/icons/icon-72.png',
+  '/icons/icon-76.png',
+  '/icons/icon-114.png',
+  '/icons/icon-120.png',
+  '/icons/icon-144.png',
+  '/icons/icon-152.png',
+  '/icons/icon-167.png',
+  '/icons/icon-180.png',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/splash-iphone-se.png',
+  '/icons/splash-iphone-8.png',
+  '/icons/splash-iphone-8plus.png',
+  '/icons/splash-iphone-x.png',
+  '/icons/splash-iphone-xr.png',
+  '/icons/splash-iphone-12.png',
+  '/icons/splash-iphone-12max.png',
+  '/icons/splash-iphone-14pro.png',
+  '/icons/splash-iphone-14promax.png',
+  '/icons/splash-ipad.png',
+  '/icons/splash-ipad-pro11.png',
+  '/icons/splash-ipad-pro12.png',
 ];
 
 const CDN_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net'];
@@ -35,7 +59,6 @@ self.addEventListener('fetch', e => {
   const isCDN = CDN_HOSTS.some(h => url.hostname.includes(h));
 
   if (isCDN) {
-    // Network-first for fonts/CDN — cache on success for offline use
     e.respondWith(
       caches.open(CACHE).then(cache =>
         fetch(e.request)
@@ -44,7 +67,6 @@ self.addEventListener('fetch', e => {
       )
     );
   } else {
-    // Cache-first for all app assets
     e.respondWith(
       caches.match(e.request).then(cached => cached || fetch(e.request))
     );
