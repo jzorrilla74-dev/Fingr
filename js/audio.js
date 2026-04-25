@@ -1,24 +1,45 @@
-let audioCtx      = null;
+let audioCtx       = null;
 let masterGainNode = null;
 let _volume        = 0.75;
 let _muted         = false;
-let _brassCurveCache = null;
+let _trumpetWave   = null; // cached PeriodicWave
 
-function getAudio() {
+// ============================================================
+// iOS AUDIO UNLOCK
+//
+// Problem: iOS creates AudioContext in 'suspended' state.
+// resume() is async — if we schedule audio immediately after
+// calling resume(), ctx.currentTime is still 0 and the notes
+// are "in the past" when the context actually starts, so silence.
+//
+// Fix: pre-create + resume the context on the VERY FIRST gesture
+// (capture:true fires before any button handler), so by the time
+// the user's tap reaches playNote() the context is already running.
+// ============================================================
+function _ensureAudio() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
-  // iOS starts AudioContext suspended — resume on every call (safe no-op if running)
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+  if (audioCtx.state !== 'running') audioCtx.resume();
+}
+
+// capture:true fires before any button click/touchend handlers
+document.addEventListener('touchstart', _ensureAudio, { passive: true, capture: true });
+document.addEventListener('mousedown',  _ensureAudio, { passive: true, capture: true });
+
+// Re-unlock when app returns from background (iOS suspends audio in background tabs)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') _ensureAudio();
+});
+
+function getAudio() {
+  _ensureAudio();
   return audioCtx;
 }
 
-// Unlock audio on first touch (iOS requires a user-gesture gate)
-document.addEventListener('touchstart', function _unlock() {
-  if (audioCtx) audioCtx.resume();
-  document.removeEventListener('touchstart', _unlock);
-}, { passive: true });
-
+// ============================================================
+// MASTER GAIN
+// ============================================================
 function getMasterGain() {
   const ctx = getAudio();
   if (!masterGainNode) {
@@ -42,64 +63,79 @@ function setMuted(m) {
 function getVolume() { return _volume; }
 function getMuted()  { return _muted; }
 
-// Soft-clip WaveShaper — adds warm brass saturation without harsh clipping
-function _getBrassCurve() {
-  if (_brassCurveCache) return _brassCurveCache;
-  const n = 512;
-  const c = new Float32Array(n);
-  for (let i = 0; i < n; i++) {
-    const x = (i * 2) / n - 1;
-    c[i] = Math.tanh(3 * x) * 0.85;
-  }
-  _brassCurveCache = c;
-  return c;
+// ============================================================
+// TRUMPET PERIODIC WAVE
+//
+// One oscillator with a custom PeriodicWave encodes ALL harmonics
+// phase-locked (no inter-oscillator beating). Amplitudes from
+// measured trumpet spectra at mezzo-forte.
+// ============================================================
+function _getTrumpetWave(ctx) {
+  if (_trumpetWave) return _trumpetWave;
+  // Sine (imag) components: index k = k-th harmonic, k=1 is fundamental
+  const amps = [0, 0.28, 0.62, 1.00, 0.90, 0.72, 0.50, 0.32, 0.18, 0.09, 0.04, 0.02];
+  const real = new Float32Array(amps.length); // cosine: all zero (pure sine phases)
+  const imag = new Float32Array(amps);
+  _trumpetWave = ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+  return _trumpetWave;
+}
+
+// ============================================================
+// PLAY NOTE
+//
+// If AudioContext is still suspended (e.g. on iOS before the
+// resume() Promise resolves), defer scheduling until it's running.
+// ============================================================
+function _doPlayNote(note) {
+  const ctx = audioCtx;
+  const concertSemi = ID_SEMI[note.id] - 2;
+  const freq = 440 * Math.pow(2, (concertSemi - 21) / 12);
+  const now  = ctx.currentTime;
+
+  // Envelope: tongued 8ms attack → exponential decay → long sustain → release
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0, now);
+  env.gain.linearRampToValueAtTime(1.0, now + 0.008);      // crisp attack
+  env.gain.setTargetAtTime(0.72, now + 0.008, 0.018);      // initial decay (~50ms)
+  env.gain.setTargetAtTime(0.58, now + 0.12,  0.20);       // slow sustain drift
+  env.gain.setTargetAtTime(0.001, now + 0.78, 0.036);      // release
+
+  // Lowpass filter: bright on attack, mellows during sustain
+  const filt = ctx.createBiquadFilter();
+  filt.type = 'lowpass';
+  filt.frequency.setValueAtTime(Math.min(freq * 14, 22000), now);
+  filt.frequency.setTargetAtTime(freq * 5.5, now, 0.07);
+  filt.Q.value = 0.6;
+
+  env.connect(filt);
+  filt.connect(getMasterGain());
+
+  // Single oscillator with trumpet PeriodicWave (no beating, no WaveShaper distortion)
+  const osc = ctx.createOscillator();
+  osc.setPeriodicWave(_getTrumpetWave(ctx));
+  osc.frequency.value = freq;
+  osc.connect(env);
+
+  // Vibrato LFO: 5.8 Hz, ±6 cents depth, fades in after 150ms
+  const lfo    = ctx.createOscillator();
+  const lfoAmp = ctx.createGain();
+  lfo.frequency.value = 5.8;
+  lfoAmp.gain.setValueAtTime(0, now);
+  lfoAmp.gain.setTargetAtTime(freq * 0.0034, now + 0.15, 0.12); // ≈ ±6 cents
+  lfo.connect(lfoAmp);
+  lfoAmp.connect(osc.frequency);
+
+  osc.start(now);  osc.stop(now + 1.05);
+  lfo.start(now);  lfo.stop(now + 1.05);
 }
 
 function playNote(note) {
   if (_muted) return;
   const ctx = getAudio();
-  const concertSemi = ID_SEMI[note.id] - 2;
-  const freq = 440 * Math.pow(2, (concertSemi - 21) / 12);
-  const now  = ctx.currentTime;
-
-  // Envelope: sharp attack → quick decay → long sustain → release
-  const noteGain = ctx.createGain();
-  noteGain.gain.setValueAtTime(0, now);
-  noteGain.gain.linearRampToValueAtTime(1.0, now + 0.010); // crisp tongued attack
-  noteGain.gain.exponentialRampToValueAtTime(0.75, now + 0.06);
-  noteGain.gain.exponentialRampToValueAtTime(0.62, now + 0.35);
-  noteGain.gain.exponentialRampToValueAtTime(0.52, now + 0.70);
-  noteGain.gain.exponentialRampToValueAtTime(0.001, now + 0.92);
-
-  // Formant filter: sweeps bright→warm (mimics trumpet bell resonance opening)
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.setValueAtTime(Math.min(freq * 12, 18000), now);
-  filter.frequency.exponentialRampToValueAtTime(Math.max(freq * 3.5, 400), now + 0.12);
-  filter.Q.value = 1.2;
-
-  // WaveShaper for brass character (adds odd harmonics / warmth)
-  const shaper = ctx.createWaveShaper();
-  shaper.curve = _getBrassCurve();
-  shaper.oversample = '2x';
-
-  noteGain.connect(filter);
-  filter.connect(shaper);
-  shaper.connect(getMasterGain());
-
-  // Trumpet harmonic series — dominant at H3–H5 (real trumpet spectral profile)
-  [
-    [1, 0.32], [2, 0.68], [3, 1.00], [4, 0.92],
-    [5, 0.70], [6, 0.45], [7, 0.24], [8, 0.11], [9, 0.05]
-  ].forEach(([m, g]) => {
-    const osc = ctx.createOscillator();
-    const gn  = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = freq * m;
-    gn.gain.value = g * 0.14; // normalise so sum ≈ 1
-    osc.connect(gn);
-    gn.connect(noteGain);
-    osc.start(now);
-    osc.stop(now + 0.95);
-  });
+  // If context not yet running (iOS resume() still pending), wait for it
+  if (ctx.state !== 'running') {
+    ctx.resume().then(() => _doPlayNote(note));
+  } else {
+    _doPlayNote(note);
+  }
 }

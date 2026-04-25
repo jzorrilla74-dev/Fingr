@@ -21,10 +21,18 @@ const TICK_INTERVAL = 25;    // ms between scheduler calls
 
 function metroStart() {
   if (METRO.isOn) return;
-  METRO.isOn      = true;
-  METRO.beat      = 0;
-  METRO._nextTime = getAudio().currentTime + 0.05;
-  _metroTick();
+  METRO.isOn = true;
+  METRO.beat = 0;
+  const ctx = getAudio();
+  const doStart = () => {
+    METRO._nextTime = ctx.currentTime + 0.1;
+    _metroTick();
+  };
+  if (ctx.state !== 'running') {
+    ctx.resume().then(doStart);
+  } else {
+    doStart();
+  }
 }
 
 function metroStop() {
