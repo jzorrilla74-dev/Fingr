@@ -47,6 +47,25 @@ function refreshFingerPanel(note) {
   renderFingerPanel(note, appState, { playNote, playSequence, stopSequence });
 }
 
+function updateCardSizes() {
+  const panel  = document.getElementById('persist-panel');
+  const scroll = document.getElementById('persist-scroll');
+  const n = appState.persistOrder.length;
+  if (!panel || !scroll || n === 0) return;
+
+  const panelH  = panel.offsetHeight;
+  const padV    = 20;   // 10px top + 10px bottom on scroll
+  const padH    = 32;   // 16px left + 16px right on scroll
+  const gap     = 8;
+
+  const cardH   = Math.max(52, panelH - padV);
+  const maxW    = Math.round(cardH * 0.82);                        // maintain aspect ratio
+  const fitW    = Math.floor((scroll.clientWidth - padH - (n - 1) * gap) / n);
+  const cardW   = Math.max(40, Math.min(maxW, Math.max(fitW, 40)));
+
+  document.documentElement.style.setProperty('--pc-w', cardW + 'px');
+}
+
 function _syncPersistPanel() {
   const panel  = document.getElementById('persist-panel');
   const handle = document.getElementById('resize-handle');
@@ -58,6 +77,7 @@ function _syncPersistPanel() {
     panel.style.height = '0';
     if (handle) handle.classList.remove('visible');
   }
+  requestAnimationFrame(updateCardSizes);
 }
 
 function refreshPersistPanel() {
@@ -519,6 +539,7 @@ function initPanelResize() {
     const newH = Math.max(minH, Math.min(startH + (startY - y), maxH));
     panel.style.height = newH + 'px';
     appState._persistPanelH = newH;
+    updateCardSizes();
   }
 
   function onEnd() {

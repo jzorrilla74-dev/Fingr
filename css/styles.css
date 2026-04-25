@@ -482,7 +482,7 @@ select:focus { border-color: var(--teal); }
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 8px;
   padding: 10px 16px;
   height: 100%;
@@ -492,17 +492,17 @@ select:focus { border-color: var(--teal); }
 
 .persist-card {
   flex-shrink: 0;
-  width: 62px;
+  width: var(--pc-w, 62px);
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 7px 6px;
+  padding: 7px calc(var(--pc-w, 62px) * 0.09);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  justify-content: space-evenly;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: border-color var(--transition), background var(--transition), transform var(--transition);
 }
 .persist-card:active { transform: scale(0.95); }
 .persist-card.is-root { border-color: var(--copper); }
@@ -511,15 +511,20 @@ select:focus { border-color: var(--teal); }
 .pc-name {
   font-family: 'Jost', sans-serif;
   font-weight: 600;
-  font-size: 11px;
+  font-size: calc(var(--pc-w, 62px) * 0.18);
   color: var(--ink);
   line-height: 1;
 }
 
-.pc-valves { display: flex; gap: 3px; align-items: center; }
+.pc-valves {
+  display: flex;
+  gap: calc(var(--pc-w, 62px) * 0.05);
+  align-items: center;
+}
 
 .pc-dot {
-  width: 12px; height: 12px;
+  width:  calc(var(--pc-w, 62px) * 0.20);
+  height: calc(var(--pc-w, 62px) * 0.20);
   border-radius: 50%;
   border: 1.5px solid var(--ink3);
   background: transparent;
@@ -530,7 +535,7 @@ select:focus { border-color: var(--teal); }
 .pc-degree {
   font-family: 'Jost', sans-serif;
   font-weight: 700;
-  font-size: 10px;
+  font-size: calc(var(--pc-w, 62px) * 0.16);
   color: var(--teal);
   line-height: 1;
 }
@@ -619,7 +624,6 @@ select:focus { border-color: var(--teal); }
 
   .fp-legend { display: none; }
 
-  .persist-card { width: 68px; }
 }
 
 /* ============================================================
@@ -648,8 +652,6 @@ select:focus { border-color: var(--teal); }
   /* Larger valve circles for touch */
   .valve { width: 44px; height: 44px; font-size: 15px; }
   .vlbl  { width: 44px; }
-
-  .persist-card { width: 64px; }
 
   /* Finger panel compact layout */
   .fp-note-name { font-size: 44px; }
