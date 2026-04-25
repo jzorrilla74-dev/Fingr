@@ -599,6 +599,23 @@ function clearAllPersist() {
 }
 
 // ============================================================
+// SCREEN WAKE LOCK — keep display on while app is open
+// ============================================================
+let _wakeLock = null;
+
+async function _acquireWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    _wakeLock = await navigator.wakeLock.request('screen');
+  } catch(e) {}
+}
+
+// Re-acquire after returning from background (browser releases it automatically)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') _acquireWakeLock();
+});
+
+// ============================================================
 // INIT
 // ============================================================
 document.getElementById('btn-transient').addEventListener('click', () => setMode('transient'));
@@ -610,6 +627,7 @@ document.getElementById('persist-clear').addEventListener('click', clearAllPersi
 
 METRO.onBeat = _onBeat;
 
+_acquireWakeLock();
 loadPersistPanelH();
 refreshMetronome();
 initStaffResize();
