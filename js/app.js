@@ -212,6 +212,7 @@ function loadSequence() {
 // NOTE CLICK
 // ============================================================
 function handleNoteClick(id) {
+  getAudio(); // unlock AudioContext in the gesture before anything else
   const note = NOTES.find(n => n.id === id);
   if (!note) return;
 

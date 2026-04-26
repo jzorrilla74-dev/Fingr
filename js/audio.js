@@ -131,11 +131,10 @@ function _doPlayNote(note) {
 
 function playNote(note) {
   if (_muted) return;
-  const ctx = getAudio();
-  // If context not yet running (iOS resume() still pending), wait for it
-  if (ctx.state !== 'running') {
-    ctx.resume().then(() => _doPlayNote(note));
-  } else {
-    _doPlayNote(note);
-  }
+  // Call getAudio() synchronously — this creates the context and calls resume()
+  // while we are still inside the user gesture (touchend/click).
+  // We then schedule _doPlayNote() immediately; Web Audio queues the events
+  // and plays them the instant resume() starts the clock, so no .then() needed.
+  getAudio();
+  _doPlayNote(note);
 }

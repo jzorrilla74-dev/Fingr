@@ -180,8 +180,10 @@ function drawStaff(containerH, appState, onNoteClick) {
 
   svg.ontouchend = e => {
     e.preventDefault();
-    const t = e.changedTouches[0];
-    const el = document.elementFromPoint(t.clientX, t.clientY);
+    const t  = e.changedTouches[0];
+    // elementFromPoint can return SVG root on iOS — walk up to find data-id
+    let el = document.elementFromPoint(t.clientX, t.clientY);
+    while (el && el !== svg && !el.getAttribute('data-id')) el = el.parentElement;
     const id = el && el.getAttribute('data-id');
     if (id && (!activeSet || activeSet.has(id))) onNoteClick(id);
   };
