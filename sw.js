@@ -1,4 +1,4 @@
-const CACHE = 'fingr-v10';
+const CACHE = 'fingr-v11';
 const ASSETS = [
   '/',
   '/index.html',

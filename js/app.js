@@ -458,8 +458,8 @@ function _onBeat(beat, bpb) {
   }
 
   // Breath between loop repetitions.
-  // breath off → complete current bar in silence, restart on next beat-1.
-  // breath on  → complete current bar + one extra full bar, restart on beat-1.
+  // breath off → silence to end of current bar, restart on beat 0.
+  // breath on  → silence to end of current bar + one full extra bar, restart on beat 0.
   if (appState._isBreathing) {
     appState._breathCount++;
     const atBarEnd = (beat + 1) % bpb === 0;
@@ -482,16 +482,35 @@ function _onBeat(beat, bpb) {
 
   appState._seqIdx++;
   if (appState._seqIdx >= appState._seqNotes.length) {
-    if (appState.loopEnabled) {
-      appState._isBreathing = true;
-      appState._breathCount = 0;
-      appState.playingId    = null;
-      redrawStaff();
-      highlightPersistCard(null);
-    } else {
-      stopSequence();
+    if (!appState.loopEnabled) { stopSequence(); return; }
+
+    // Determine breath behaviour based on where in the bar we are NOW
+    // (this beat is the first silence beat after the last note).
+    const onBarEnd      = (beat + 1) % bpb === 0; // this beat ends a bar
+    const onDownbeat    = beat === 0;               // this beat starts a bar
+
+    appState.playingId = null;
+    redrawStaff();
+    highlightPersistCard(null);
+
+    if (!appState.breathEnabled && onBarEnd) {
+      // Last silence beat is already the bar end — restart on next downbeat.
+      appState._seqIdx       = -1;
+      appState._seqBeatCount = appState.noteDuration - 1;
+      return;
     }
-    return;
+
+    if (!appState.breathEnabled && onDownbeat) {
+      // Sequence fills bars exactly — no silence needed, restart this beat.
+      appState._seqIdx       = 0;
+      appState._seqBeatCount = 0;
+      // fall through to play note 0 below
+    } else {
+      // Enter breathing. Count the entry beat so the bar math is correct.
+      appState._isBreathing = true;
+      appState._breathCount = (onBarEnd || onDownbeat) ? 1 : 0;
+      return;
+    }
   }
   const note = appState._seqNotes[appState._seqIdx];
   playNote(note);
