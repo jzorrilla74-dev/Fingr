@@ -98,10 +98,8 @@ function _doPlayNote(note) {
   try {
     const freq = 440 * Math.pow(2, (ID_SEMI[note.id] - 2 - 21) / 12);
 
-    // If the context was just resumed, currentTime may still be at the
-    // frozen value and iOS starts the clock a few ms ahead. A small offset
-    // ensures envelope events are never "in the past" when processing begins.
-    const now = ctx.currentTime + (ctx.state === 'running' ? 0 : 0.05);
+    // Small margin so events never land exactly on currentTime.
+    const now = ctx.currentTime + 0.02;
 
     const env = ctx.createGain();
     env.gain.setValueAtTime(0, now);
@@ -159,6 +157,16 @@ function _doPlayNote(note) {
 
 function playNote(note) {
   if (_muted) return;
-  getAudio(); // unlock in the current gesture before scheduling
-  _doPlayNote(note);
+  const ctx = getAudio(); // creates context + calls resume() in the gesture
+  if (ctx.state === 'running') {
+    _doPlayNote(note);
+  } else {
+    // Context is suspended: wait for resume() to fully complete before
+    // scheduling notes. iOS starts the clock AFTER the promise resolves,
+    // so scheduling before that puts events in the past → silence.
+    // Audio nodes created inside .then() are fine once context is running.
+    ctx.resume()
+      .then(() => _doPlayNote(note))
+      .catch(() => {});
+  }
 }
