@@ -2,18 +2,18 @@ let audioCtx       = null;
 let masterGainNode = null;
 let _volume        = 0.75;
 let _muted         = false;
-let _trumpetWave   = null;
 
 // ============================================================
 // iOS AUDIO UNLOCK
 //
-// Three-layer unlock:
-// 1. capture:true touchstart fires before any button handler, so
-//    AudioContext + resume() happen synchronously in the gesture.
-// 2. Silent 1-sample BufferSource — the original iOS trick that works
-//    even when resume() alone isn't sufficient (iOS < 14).
-// 3. playNote() also calls getAudio() (= _ensureAudio) so resume() is
-//    called again directly in the touchend gesture that fired the note.
+// 1. capture:true touchstart/mousedown fires before any button handler
+//    so AudioContext + resume() happen synchronously in the gesture.
+// 2. Silent 1-sample BufferSource — the iOS gate that works even when
+//    resume() alone is insufficient (iOS < 14).
+// 3. playNote() waits for resume() to resolve before scheduling — on iOS
+//    currentTime is frozen while suspended, so notes scheduled against it
+//    land in the past and are silently dropped. Scheduling inside .then()
+//    guarantees the clock is live.
 // ============================================================
 function _ensureAudio() {
   if (!audioCtx) {
@@ -21,7 +21,6 @@ function _ensureAudio() {
   }
   if (audioCtx.state !== 'running') {
     audioCtx.resume();
-    // Silent buffer — belt-and-suspenders iOS unlock
     try {
       const buf = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
       const src = audioCtx.createBufferSource();
@@ -71,25 +70,9 @@ function getVolume() { return _volume; }
 function getMuted()  { return _muted; }
 
 // ============================================================
-// TRUMPET PERIODIC WAVE
-// No third argument to createPeriodicWave — the options dictionary
-// was added in Safari 14.1 and throws on older WebKit.
-// ============================================================
-function _getTrumpetWave(ctx) {
-  if (_trumpetWave) return _trumpetWave;
-  try {
-    const amps = [0, 0.28, 0.62, 1.00, 0.90, 0.72, 0.50, 0.32, 0.18, 0.09, 0.04, 0.02];
-    const real = new Float32Array(amps.length);
-    const imag = new Float32Array(amps);
-    _trumpetWave = ctx.createPeriodicWave(real, imag);
-  } catch(e) {
-    _trumpetWave = null;
-  }
-  return _trumpetWave;
-}
-
-// ============================================================
 // PLAY NOTE
+// Multi-harmonic sawtooth synthesis — simpler and more compatible
+// across iOS versions than createPeriodicWave.
 // ============================================================
 function _doPlayNote(note) {
   const ctx = audioCtx;
@@ -97,74 +80,49 @@ function _doPlayNote(note) {
 
   try {
     const freq = 440 * Math.pow(2, (ID_SEMI[note.id] - 2 - 21) / 12);
+    const now  = ctx.currentTime + 0.02;
 
-    // Small margin so events never land exactly on currentTime.
-    const now = ctx.currentTime + 0.02;
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0,    now);
+    master.gain.linearRampToValueAtTime(0.22, now + 0.04);
+    master.gain.linearRampToValueAtTime(0.18, now + 0.50);
+    master.gain.linearRampToValueAtTime(0,    now + 0.85);
+    master.connect(getMasterGain());
 
-    const env = ctx.createGain();
-    env.gain.setValueAtTime(0, now);
-    env.gain.linearRampToValueAtTime(1.0, now + 0.008);
-    env.gain.setTargetAtTime(0.72, now + 0.008, 0.018);
-    env.gain.setTargetAtTime(0.58, now + 0.12,  0.20);
-    env.gain.setTargetAtTime(0.001, now + 0.78, 0.036);
-
-    const filt = ctx.createBiquadFilter();
-    filt.type = 'lowpass';
-    filt.frequency.setValueAtTime(Math.min(freq * 14, 22000), now);
-    filt.frequency.setTargetAtTime(freq * 5.5, now, 0.07);
-    filt.Q.value = 0.6;
-
-    env.connect(filt);
-    filt.connect(getMasterGain());
-
-    const osc = ctx.createOscillator();
-    const wave = _getTrumpetWave(ctx);
-    if (wave) {
-      osc.setPeriodicWave(wave);
-    } else {
-      osc.type = 'sawtooth'; // fallback if PeriodicWave unsupported
-    }
-    osc.frequency.value = freq;
-    osc.connect(env);
-
-    const lfo    = ctx.createOscillator();
-    const lfoAmp = ctx.createGain();
-    lfo.frequency.value = 5.8;
-    lfoAmp.gain.setValueAtTime(0, now);
-    lfoAmp.gain.setTargetAtTime(freq * 0.0034, now + 0.15, 0.12);
-    lfo.connect(lfoAmp);
-    lfoAmp.connect(osc.frequency);
-
-    osc.start(now);  osc.stop(now + 1.05);
-    lfo.start(now);  lfo.stop(now + 1.05);
+    [[1, 0.5], [2, 0.3], [3, 0.15], [4, 0.05]].forEach(([mult, gain]) => {
+      const o  = ctx.createOscillator();
+      const gn = ctx.createGain();
+      o.type = 'sawtooth';
+      o.frequency.value = freq * mult;
+      gn.gain.value = gain;
+      o.connect(gn);
+      gn.connect(master);
+      o.start(now);
+      o.stop(now + 0.9);
+    });
 
   } catch(e) {
-    // Last-resort fallback: plain sine directly to destination
     try {
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const t    = ctx.currentTime;
-      osc.frequency.value = 440 * Math.pow(2, (ID_SEMI[note.id] - 2 - 21) / 12);
-      gain.gain.setValueAtTime(0.5, t);
-      gain.gain.setTargetAtTime(0.001, t + 0.6, 0.05);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(t);
-      osc.stop(t + 0.8);
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      const t = ctx.currentTime;
+      o.frequency.value = 440 * Math.pow(2, (ID_SEMI[note.id] - 2 - 21) / 12);
+      g.gain.setValueAtTime(0.4, t);
+      g.gain.linearRampToValueAtTime(0, t + 0.7);
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start(t);
+      o.stop(t + 0.8);
     } catch(e2) {}
   }
 }
 
 function playNote(note) {
   if (_muted) return;
-  const ctx = getAudio(); // creates context + calls resume() in the gesture
+  const ctx = getAudio();
   if (ctx.state === 'running') {
     _doPlayNote(note);
   } else {
-    // Context is suspended: wait for resume() to fully complete before
-    // scheduling notes. iOS starts the clock AFTER the promise resolves,
-    // so scheduling before that puts events in the past → silence.
-    // Audio nodes created inside .then() are fine once context is running.
     ctx.resume()
       .then(() => _doPlayNote(note))
       .catch(() => {});
