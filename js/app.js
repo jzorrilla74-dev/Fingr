@@ -20,7 +20,7 @@ const appState = {
   countIn:           false,
   playOrder:         'sequential',  // 'sequential' | 'ascending'
   loopEnabled:       false,
-  breathDuration:    2,             // beats of rest between loop repetitions
+  breathEnabled:     false,         // extra bar of rest between loop repetitions
   // Internal sequence state
   _seqNotes:         [],
   _seqIdx:           -1,
@@ -118,15 +118,15 @@ function refreshMetronome() {
     onMute()            { setMuted(!getMuted()); refreshMetronome(); },
     onPlayOrder(order)  { appState.playOrder = order; refreshMetronome(); },
     onLoop()            { appState.loopEnabled = !appState.loopEnabled; refreshMetronome(); },
-    onBreath(d)         { appState.breathDuration = d; refreshMetronome(); },
+    onBreath()          { appState.breathEnabled = !appState.breathEnabled; refreshMetronome(); },
   }, {
-    noteDuration:   appState.noteDuration,
-    countIn:        appState.countIn,
-    volume:         getVolume(),
-    muted:          getMuted(),
-    playOrder:      appState.playOrder,
-    loopEnabled:    appState.loopEnabled,
-    breathDuration: appState.breathDuration,
+    noteDuration:  appState.noteDuration,
+    countIn:       appState.countIn,
+    volume:        getVolume(),
+    muted:         getMuted(),
+    playOrder:     appState.playOrder,
+    loopEnabled:   appState.loopEnabled,
+    breathEnabled: appState.breathEnabled,
   });
 }
 
@@ -209,10 +209,26 @@ function loadSequence() {
 }
 
 // ============================================================
+// iOS SILENT-SWITCH NOTICE
+// Show once per session on iOS when a note is first played.
+// ============================================================
+let _silentNoticeDone = false;
+function _maybeShowSilentNotice() {
+  if (_silentNoticeDone) return;
+  if (!/iPhone|iPad|iPod/.test(navigator.userAgent)) return;
+  _silentNoticeDone = true;
+  const el = document.getElementById('ios-audio-notice');
+  if (!el) return;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 5000);
+}
+
+// ============================================================
 // NOTE CLICK
 // ============================================================
 function handleNoteClick(id) {
   getAudio(); // unlock AudioContext in the gesture before anything else
+  _maybeShowSilentNotice();
   const note = NOTES.find(n => n.id === id);
   if (!note) return;
 
@@ -346,15 +362,13 @@ function _playSeqFree() {
   const seqMs = notes.length * (SEQ_NOTE_DUR + SEQ_GAP) * 1000;
 
   if (appState.loopEnabled) {
-    const breathMs = appState.breathDuration * (SEQ_NOTE_DUR + SEQ_GAP) * 1000;
-    // Silence between repetitions
+    const breathMs = appState.breathEnabled ? 2000 : 0;
     appState.seqTimeouts.push(setTimeout(() => {
       if (!appState.isPlaying) return;
       appState.playingId = null;
       redrawStaff();
       highlightPersistCard(null);
     }, seqMs));
-    // Restart after breath
     appState.seqTimeouts.push(setTimeout(() => {
       if (!appState.isPlaying) return;
       _playSeqFree();
@@ -444,11 +458,15 @@ function _onBeat(beat, bpb) {
   }
 
   // Breath between loop repetitions.
-  // Only release on the last beat of a bar so the next note lands on beat 1.
+  // breath off → complete current bar in silence, restart on next beat-1.
+  // breath on  → complete current bar + one extra full bar, restart on beat-1.
   if (appState._isBreathing) {
     appState._breathCount++;
-    const nextBeat = (beat + 1) % bpb;
-    if (appState._breathCount >= appState.breathDuration && nextBeat === 0) {
+    const atBarEnd = (beat + 1) % bpb === 0;
+    const done = appState.breathEnabled
+      ? appState._breathCount >= bpb && atBarEnd
+      : atBarEnd;
+    if (done) {
       appState._isBreathing  = false;
       appState._breathCount  = 0;
       appState._seqIdx       = -1;

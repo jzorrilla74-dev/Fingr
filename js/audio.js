@@ -27,6 +27,37 @@ function _ensureAudio() {
   }
 }
 
+// ============================================================
+// iOS SILENT-SWITCH BYPASS (best-effort)
+//
+// Route WebAudio through an <audio> element via createMediaStreamDestination.
+// Safari/WKWebView set the AVAudioSession to 'playback' category when an
+// <audio> element is actively playing, which bypasses the silent switch.
+// This only works on iOS 14+ (createMediaStreamDestination availability).
+// ============================================================
+let _sessionUnlockTried = false;
+
+function _trySessionUnlock() {
+  if (_sessionUnlockTried || !audioCtx) return;
+  _sessionUnlockTried = true;
+  try {
+    if (typeof audioCtx.createMediaStreamDestination !== 'function') return;
+    const dest  = audioCtx.createMediaStreamDestination();
+    const audio = new Audio();
+    audio.srcObject = dest.stream;
+    audio.volume    = 0.001;
+    audio.play().catch(() => {});
+    const osc  = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0.0001; // inaudible
+    osc.connect(gain);
+    gain.connect(dest);
+    const t = audioCtx.currentTime;
+    osc.start(t);
+    osc.stop(t + 0.5);
+  } catch(e) { _sessionUnlockTried = false; }
+}
+
 document.addEventListener('touchstart', _ensureAudio, { passive: true, capture: true });
 document.addEventListener('mousedown',  _ensureAudio, { passive: true, capture: true });
 
@@ -36,6 +67,7 @@ document.addEventListener('visibilitychange', () => {
 
 function getAudio() {
   _ensureAudio();
+  _trySessionUnlock();
   return audioCtx;
 }
 

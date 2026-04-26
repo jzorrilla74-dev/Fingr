@@ -218,7 +218,7 @@ function renderMetronome(metroState, callbacks, uiState) {
   const { bpm, timeSig, isOn } = metroState;
   const {
     noteDuration = 1, countIn = false, volume = 0.75, muted = false,
-    playOrder = 'sequential', loopEnabled = false, breathDuration = 2,
+    playOrder = 'sequential', loopEnabled = false, breathEnabled = false,
   } = uiState || {};
   const bpb = { '4/4': 4, '3/4': 3, '6/8': 6 }[timeSig] || 4;
 
@@ -228,10 +228,6 @@ function renderMetronome(metroState, callbacks, uiState) {
 
   const durHTML = [1, 2, 4].map(d =>
     `<button class="metro-dur-btn${d === noteDuration ? ' active' : ''}" data-dur="${d}">${d}</button>`
-  ).join('');
-
-  const breathHTML = [1, 2, 3, 4].map(d =>
-    `<button class="metro-dur-btn${d === breathDuration ? ' active' : ''}" data-breath="${d}">${d}</button>`
   ).join('');
 
   section.innerHTML = `
@@ -293,9 +289,10 @@ function renderMetronome(metroState, callbacks, uiState) {
 
       ${loopEnabled ? `
       <div class="metro-breath-row">
-        <span class="fp-label">Breath</span>
-        <div class="metro-durs">${breathHTML}</div>
-        <span class="fp-label" style="margin-left:2px;">beats</span>
+        <span class="fp-label">Breath bar</span>
+        <button class="metro-breathe-btn${breathEnabled ? ' active' : ''}" id="metro-breathe-btn">
+          ${breathEnabled ? '◉ On' : '○ Off'}
+        </button>
       </div>` : ''}
     </div>`;
 
@@ -322,13 +319,12 @@ function renderMetronome(metroState, callbacks, uiState) {
     btn.onclick = () => callbacks.onDuration(parseInt(btn.getAttribute('data-dur'), 10));
   });
 
-  section.querySelectorAll('.metro-dur-btn[data-breath]').forEach(btn => {
-    btn.onclick = () => callbacks.onBreath(parseInt(btn.getAttribute('data-breath'), 10));
-  });
-
   document.getElementById('metro-countin-btn').onclick = callbacks.onCountIn;
 
   document.getElementById('metro-loop-btn').onclick = callbacks.onLoop;
+
+  const breatheBtn = document.getElementById('metro-breathe-btn');
+  if (breatheBtn) breatheBtn.onclick = callbacks.onBreath;
 
   section.querySelectorAll('.metro-order-btn').forEach(btn => {
     btn.onclick = () => callbacks.onPlayOrder(btn.getAttribute('data-order'));
