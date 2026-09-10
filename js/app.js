@@ -32,6 +32,8 @@ const appState = {
   _breathCount:      0,
   _metroStartedForSeq: false,
   _waitingForBeat1:  false,
+  // Annotations (note names + scale degrees on staff)
+  showAnnotations:   true,
   // Panel resize
   _persistPanelH:    96,
 };
@@ -537,6 +539,19 @@ function _metroTimeSigHandler(sig) {
 }
 
 // ============================================================
+// ANNOTATIONS TOGGLE
+// ============================================================
+function toggleAnnotations() {
+  appState.showAnnotations = !appState.showAnnotations;
+  const btn = document.getElementById('annot-btn');
+  if (btn) {
+    btn.classList.toggle('active', !appState.showAnnotations);
+    btn.title = appState.showAnnotations ? 'Hide annotations' : 'Show annotations';
+  }
+  redrawStaff();
+}
+
+// ============================================================
 // THEME
 // ============================================================
 function toggleTheme() {
@@ -661,6 +676,7 @@ document.getElementById('btn-persistent').addEventListener('click', () => setMod
 document.getElementById('type-select').addEventListener('change', onTypeChange);
 document.getElementById('root-select').addEventListener('change', onRootChange);
 document.getElementById('theme-btn').addEventListener('click', toggleTheme);
+document.getElementById('annot-btn').addEventListener('click', toggleAnnotations);
 document.getElementById('persist-clear').addEventListener('click', clearAllPersist);
 
 METRO.onBeat = _onBeat;

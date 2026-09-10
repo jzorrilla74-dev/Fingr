@@ -35,7 +35,7 @@ function drawStaff(containerH, appState, onNoteClick) {
   svg.innerHTML = '';
 
   const { LG, H, SB, NRX, NRY, PER, CLEF_W } = _staffMetrics(containerH);
-  const { mode, selectedId, persistSet, activeSet, degreeMap, currentRoot, playingId } = appState;
+  const { mode, selectedId, persistSet, activeSet, degreeMap, currentRoot, playingId, showAnnotations = true } = appState;
 
   const W = CLEF_W + NOTES.length * PER + 30;
 
@@ -151,7 +151,7 @@ function drawStaff(containerH, appState, onNoteClick) {
     }
 
     // Scale degree (Roman numeral above staff)
-    if (activeSet && activeSet.has(note.id) && degreeMap[note.id] !== undefined) {
+    if (showAnnotations && activeSet && activeSet.has(note.id) && degreeMap[note.id] !== undefined) {
       svg.appendChild(_se('text', {
         x, y: staffPY(14, LG, SB),
         'font-size': LG * 0.5,
@@ -162,14 +162,16 @@ function drawStaff(containerH, appState, onNoteClick) {
     }
 
     // Note name label below staff
-    svg.appendChild(_se('text', {
-      x, y: staffPY(-8, LG, SB),
-      'font-size': LG * 0.41,
-      'font-family': 'Jost, sans-serif',
-      fill: isActive ? (isRoot && activeSet ? copper : ink3) : ink3,
-      'text-anchor': 'middle',
-      opacity: isActive ? 1 : 0.3
-    }, note.disp + note.oct));
+    if (showAnnotations) {
+      svg.appendChild(_se('text', {
+        x, y: staffPY(-8, LG, SB),
+        'font-size': LG * 0.41,
+        'font-family': 'Jost, sans-serif',
+        fill: isActive ? (isRoot && activeSet ? copper : ink3) : ink3,
+        'text-anchor': 'middle',
+        opacity: isActive ? 1 : 0.3
+      }, note.disp + note.oct));
+    }
   });
 
   svg.onclick = e => {

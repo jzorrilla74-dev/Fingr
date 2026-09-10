@@ -188,6 +188,26 @@ select:focus { border-color: var(--teal); }
   white-space: nowrap;
 }
 
+/* ANNOTATION TOGGLE */
+.annot-btn {
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink2);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Jost', sans-serif;
+  transition: all var(--transition);
+  margin-left: auto;
+}
+.annot-btn:hover { border-color: var(--teal); color: var(--teal); }
+.annot-btn.active { background: var(--bg2); color: var(--ink3); border-color: var(--border2); }
+
 /* THEME TOGGLE */
 .theme-btn {
   width: 32px; height: 32px;
